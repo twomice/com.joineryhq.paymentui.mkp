@@ -23,13 +23,16 @@ public $_params;
 	$this->assign('bltID', $this->_bltID);
 	$this->_fields = array();
 
-	CRM_Core_Payment_Form::setCreditCardFields($this);
+  $this->payment_processor_id = 5;
+  
+  $payment_processors = CRM_Financial_BAO_PaymentProcessor::getPaymentProcessors();
+  $processor = $payment_processors[$this->payment_processor_id];
+
+	CRM_Core_Payment_Form::buildPaymentForm($this, $processor, FALSE, FALSE);
 	$this->assign_by_ref('paymentProcessor', $paymentProcessor);
-	$this->assign('hidePayPalExpress', TRUE);
+	$this->assign('hidePayPalExpress', FALSE);
 	//Set Payment processor to CC
 	
-	$this->payment_processor_id = CRM_Core_DAO::getFieldValue( 'CRM_Financial_DAO_PaymentProcessor', 'Credit Card', 'id', 'name');
-
 	$this->_paymentProcessor = CRM_Financial_BAO_PaymentProcessor::getPayment( $this->payment_processor_id, 'live' );
   }
 	
@@ -64,7 +67,7 @@ public $_params;
 		$element =& $this->add( 'text', "payment[$pid]", null, array( 'onblur' => 'calculateTotal();' ),	false);
 	}
 	CRM_Contribute_Form_ContributionBase::assignToTemplate();
-	CRM_Core_Payment_Form::buildCreditCard($this);	
+//	CRM_Core_Payment_Form::buildCreditCard($this);
     
     $this->addButtons(array(
       array(
@@ -171,7 +174,7 @@ public $_params;
 
 	$partialPaymentInfo = $this->_participantInfo;
     //Process all the partial payments and update the records
-	payment_civicrm_process_partial_payments( $paymentParams, $this->_participantInfo );
+	process_partial_payments( $paymentParams, $this->_participantInfo );
 	parent::postProcess();
   
 	//Define status message
