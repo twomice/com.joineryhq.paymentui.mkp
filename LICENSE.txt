@@ -1,5 +1,6 @@
-Package: bot.roundlake.paymentui
-Copyright (C) 2015, FIXME <FIXME>
+Package: com.joineryhq.paymentui.mkp
+Original Copyright (C) 2015 (presumably by Anum Goel at Backoffice Thinking
+Additional content Copyright (C) 2016, Allen Shaw <allen@joineryhq.com>
 Licensed under the GNU Affero Public License 3.0 (below).
 
 -------------------------------------------------------------------------------
