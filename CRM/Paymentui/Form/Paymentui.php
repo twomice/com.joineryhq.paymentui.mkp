@@ -181,7 +181,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
     CRM_Core_Session::setStatus($statusMsg, ts('Saved'), 'success');
 
     //Redirect to the same URL
-    $url = CRM_Utils_System::url('civicrm/roundlake/add/payment', "reset=1");
+    $url = CRM_Utils_System::url('civicrm/paymentui/add/payment', "reset=1");
     $session = CRM_Core_Session::singleton();
     CRM_Utils_System::redirect($url);
   }

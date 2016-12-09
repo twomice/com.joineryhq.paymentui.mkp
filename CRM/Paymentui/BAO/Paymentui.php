@@ -1,11 +1,5 @@
 <?php
 
-/**
- *
- * @package BOT Roundlake Payment User Interface Helper functions
- * $Id$
- *
- */
 class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
 
   static function getParticipantInfo($contactID) {

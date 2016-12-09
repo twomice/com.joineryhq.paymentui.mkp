@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <menu>
   <item>
-    <path>civicrm/roundlake/add/payment</path>
+    <path>civicrm/paymentui/add/payment</path>
     <page_callback>CRM_Paymentui_Form_Paymentui</page_callback>
     <title>Add payment</title>
     <access_arguments>register for events</access_arguments>
