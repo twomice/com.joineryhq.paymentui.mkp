@@ -3,10 +3,15 @@
   <item>
     <path>civicrm/paymentui/add/payment</path>
     <page_callback>CRM_Paymentui_Form_Paymentui</page_callback>
-    <title>Add payment</title>
-    <access_arguments>register for events</access_arguments>
-    <access_callback>1</access_callback>
+    <title>Submit payment for outstanding event balances</title>
+    <access_arguments>paymentui_add_payments</access_arguments>
     <is_public>true</is_public>
     <is_ssl>true</is_ssl>
+  </item>
+  <item>
+    <path>civicrm/admin/paymentui/settings</path>
+    <page_callback>CRM_Paymentui_Form_Settings</page_callback>
+    <title>Settings</title>
+    <access_arguments>administer CiviCRM</access_arguments>
   </item>
 </menu>

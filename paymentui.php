@@ -106,3 +106,12 @@ function paymentui_civicrm_caseTypes(&$caseTypes) {
 function paymentui_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
   _paymentui_civix_civicrm_alterSettingsFolders($metaDataFolders);
 }
+
+function paymentui_civicrm_permission(&$permissions) {
+  $permissions += array(
+    'paymentui_add_payments' => array(
+      ts('Submit Additional Payments', array('domain' => 'com.joineryhq.paymentui.mkp')),
+      ts('Allows for submitting additional payments against existing partially paid balances.', array('domain' => 'com.joineryhq.paymentui.mkp')),
+    ),
+  );
+}

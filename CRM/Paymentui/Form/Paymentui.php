@@ -8,6 +8,10 @@ require_once 'CRM/Core/Form.php';
 class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
 
   public $_params;
+  public $_amount;
+  public $_mode;
+  public $_contributeMode;
+  private $_contactID;
 
   /**
    * Function to set variables up before form is built
@@ -16,6 +20,10 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
    * @access public
    */
   public function preProcess() {
+    // check if the user is registered and we have a contact ID
+    $this->_contactID = $this->getContactID();
+
+    // Determine the correct payment processor.
     $this->_paymentProcessor = array('billing_mode' => 1);
     $locationTypes = CRM_Core_PseudoConstant::get('CRM_Core_DAO_Address', 'location_type_id', array(), 'validate');
     $this->_bltID = array_search('Billing', $locationTypes);
@@ -23,7 +31,18 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
     $this->assign('bltID', $this->_bltID);
     $this->_fields = array();
 
-    $this->payment_processor_id = 5;
+    $result = civicrm_api3('PaymentProcessor', 'get', array(
+      'is_default' => 1,
+      'is_test' => 0,
+    ));
+    $this->payment_processor_id = $result['id'];
+
+    if (!$this->payment_processor_id) {
+      CRM_Core_Error::fatal(ts('No default payment processor is available. Cannot continue.'));
+    }
+        
+    //Set Payment processor to default
+    $this->_paymentProcessor = CRM_Financial_BAO_PaymentProcessor::getPayment($this->payment_processor_id, 'live');
 
     $payment_processors = CRM_Financial_BAO_PaymentProcessor::getPaymentProcessors();
     $processor = $payment_processors[$this->payment_processor_id];
@@ -31,10 +50,34 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
     CRM_Core_Payment_Form::buildPaymentForm($this, $processor, FALSE, FALSE);
     $this->assign_by_ref('paymentProcessor', $paymentProcessor);
     $this->assign('hidePayPalExpress', FALSE);
-    //Set Payment processor to CC
-
-    $this->_paymentProcessor = CRM_Financial_BAO_PaymentProcessor::getPayment($this->payment_processor_id, 'live');
   }
+
+  /**
+   * Set the default values.
+   *
+   * @return Array
+   */
+  /**
+   */
+  public function setDefaultValues() {
+
+    if (!empty($this->_contactID)) {
+      $this->_defaults = $this->getProfileDefaults('Billing', $this->_contactID);
+    }
+
+    // set default country from config if no country set
+    if (empty($this->_defaults["billing_country_id-{$this->_bltID}"])) {
+      $this->_defaults["billing_country_id-{$this->_bltID}"] = $config->defaultContactCountry;
+    }
+
+    // set default state/province from config if no state/province set
+    if (empty($this->_defaults["billing_state_province_id-{$this->_bltID}"])) {
+      $this->_defaults["billing_state_province_id-{$this->_bltID}"] = $config->defaultContactStateProvince;
+    }
+
+    return $this->_defaults;
+  }
+
 
   /**
    * Function to build the form
@@ -45,42 +88,42 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
   public function buildQuickForm() {
     //Get contact name of the logged in user
     $session = CRM_Core_Session::singleton();
-    $this->_contactId = $session->get('userID');
 
-    if (!$this->_contactId) {
-      $message = ts('You are not authorized to view this page');
+    if (!$this->_contactID) {
+      $message = ts('You are not authorized to view this page.');
       CRM_Utils_System::setUFMessage($message);
       return;
     }
-    $this->assign('contactId', $this->_contactId);
-    $displayName = CRM_Contact_BAO_Contact::displayName($this->_contactId);
-    $this->assign('displayName', $displayName);
-
-    //Set column headers for the table
-    $columnHeaders = array('Event', 'Registrant', 'Cost', 'Paid to Date', '$$ remaining', 'Make Payment');
-    $this->assign('columnHeaders', $columnHeaders);
+    $this->assign('contactId', $this->_contactID);
 
     //Get event names for which logged in user and the related contacts are registered
-    $this->_participantInfo = CRM_Paymentui_BAO_Paymentui::getParticipantInfo($this->_contactId);
-    $this->assign('participantInfo', $this->_participantInfo);
-    foreach ($this->_participantInfo as $pid => $pInfo) {
-      $element = & $this->add('text', "payment[$pid]", null, array('onblur' => 'calculateTotal();'), false);
+    $this->_participantInfo = CRM_Paymentui_BAO_Paymentui::getParticipantInfo($this->_contactID);
+    if (!empty($this->_participantInfo)) {
+      $this->assign('displayName', CRM_Contact_BAO_Contact::displayName($this->_contactID));
+
+      //Set column headers for the table
+      $columnHeaders = array('Event', 'Registrant', 'Cost', 'Paid to Date', 'Amount Unpaid', 'Make Payment');
+      $this->assign('columnHeaders', $columnHeaders);
+
+      $this->assign('participantInfo', $this->_participantInfo);
+      foreach ($this->_participantInfo as $pid => $pInfo) {
+        $element = & $this->add('text', "payment[$pid]", null, array('onkeyup' => 'calculateTotal();'), false);
+      }
+      CRM_Contribute_Form_ContributionBase::assignToTemplate();
+
+      $this->addButtons(array(
+        array(
+          'type' => 'submit',
+          'name' => ts('Submit'),
+          'isDefault' => TRUE,
+        ),
+      ));
+
+      // export form elements
+      $this->assign('elementNames', $this->getRenderableElementNames());
+      parent::buildQuickForm();
+      $this->addFormRule(array('CRM_Paymentui_Form_Paymentui', 'formRule'), $this);
     }
-    CRM_Contribute_Form_ContributionBase::assignToTemplate();
-//	CRM_Core_Payment_Form::buildCreditCard($this);
-
-    $this->addButtons(array(
-      array(
-        'type' => 'submit',
-        'name' => ts('Submit'),
-        'isDefault' => TRUE,
-      ),
-    ));
-
-    // export form elements
-    $this->assign('elementNames', $this->getRenderableElementNames());
-    parent::buildQuickForm();
-    $this->addFormRule(array('CRM_Paymentui_Form_Paymentui', 'formRule'), $this);
   }
 
   /**
@@ -96,18 +139,25 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
    * @access public
    * @static
    */
-  function formRule($fields, $files, $self) {
+  static function formRule($fields, $files, $self) {
     $errors = array();
     //Validate the amount: should not be more than balance and should be numeric
+    $total = 0;
     foreach ($fields['payment'] as $pid => $amount) {
       if ($amount) {
         if ($self->_participantInfo[$pid]['balance'] < $amount) {
-          $errors['payment[' . $pid . ']'] = "Amount can not exceed the balance amount";
+          $errors['payment[' . $pid . ']'] = ts('Amount can not exceed the balance amount.');
         }
         if (!is_numeric($amount)) {
-          $errors['payment[' . $pid . ']'] = "Please enter a valid amount";
+          $errors['payment[' . $pid . ']'] = ts('Please enter a valid amount.');
+        }
+        else {
+          $total += $amount;
         }
       }
+    }
+    if (!$total) {
+      $errors["payment[{$pid}]"] = ts('Please enter an amount for at least one event.');
     }
     //Validate credit card fields
     $required = array(
@@ -140,7 +190,6 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
    * @return void
    */
   public function postProcess() {
-    $values = $this->exportValues();
     $this->_params = $this->controller->exportValues($this->_name);
     $totalAmount = 0;
     $config = CRM_Core_Config::singleton();
@@ -152,14 +201,11 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
     }
     //Building params for CC processing
     $this->_params["state_province-{$this->_bltID}"] = $this->_params["billing_state_province-{$this->_bltID}"] = CRM_Core_PseudoConstant::stateProvinceAbbreviation($this->_params["billing_state_province_id-{$this->_bltID}"]);
-
     $this->_params["country-{$this->_bltID}"] = $this->_params["billing_country-{$this->_bltID}"] = CRM_Core_PseudoConstant::countryIsoCode($this->_params["billing_country_id-{$this->_bltID}"]);
-
     $this->_params['year'] = CRM_Core_Payment_Form::getCreditCardExpirationYear($this->_params);
     $this->_params['month'] = CRM_Core_Payment_Form::getCreditCardExpirationMonth($this->_params);
     $this->_params['ip_address'] = CRM_Utils_System::ipAddress();
     $this->_params['amount'] = $totalAmount;
-    $this->_params['amount_level'] = $params['amount_level'];
     $this->_params['currencyID'] = $config->defaultCurrency;
     $this->_params['payment_action'] = 'Sale';
     $this->_params['invoiceID'] = md5(uniqid(rand(), TRUE));
@@ -179,6 +225,25 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
     //Define status message
     $statusMsg = ts('The payment(s) have been processed successfully.');
     CRM_Core_Session::setStatus($statusMsg, ts('Saved'), 'success');
+
+    // Save billing details to new or existing billing address.
+    $api_params = array(
+      'street_address' => $this->_params['billing_street_address-5'],
+      'city' => $this->_params['billing_city-5'],
+      'state_province_id' => $this->_params['billing_state_province_id-5'],
+      'postal_code' => $this->_params['billing_postal_code-5'],
+      'country_id' => $this->_params['billing_country_id-5'],
+      'location_type_id' => "Billing",
+      'contact_id' => $this->_contactID,
+    );
+    $result = civicrm_api3('Address', 'get', array(
+      'location_type_id' => "Billing",
+      'contact_id' => $this->_contactID,
+    ));
+    if (!empty($result['values'])) {
+      $api_params['id'] = min(array_keys($result['values']));
+    }
+    $result = civicrm_api3('Address', 'create', $api_params);
 
     //Redirect to the same URL
     $url = CRM_Utils_System::url('civicrm/paymentui/add/payment', "reset=1");
