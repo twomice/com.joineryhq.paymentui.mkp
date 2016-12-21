@@ -1,20 +1,24 @@
 <?php
 
 return array(
-  'paymentui_payment_processor_id' => array(
+  'paymentui_exclude_participant_status' => array(
     'group_name' => 'Paymentui Settings',
     'group' => 'paymentui',
-    'name' => 'paymentui_payment_processor_id',
+    'name' => 'paymentui_exclude_participant_status',
     'type' => 'Int',
     'add' => '4.6',
     'is_domain' => 1,
     'is_contact' => 0,
-    'description' => ts('The payment processor to be used for all partial payments.'),
-    'title' =>  ts('Payment processor'),
+    'default' => array(0),
+    'description' => ts('Participation records in any of the selected statuses will not appear on the payments page.') . ' (' . ts('Use Ctrl+click to select or unselect multiple options.') . ')',
+    'title' =>  ts('Exclude by status'),
     'help_text' => '',
     'html_type' => 'Select',
-    'html_attributes' => array(),
+    'html_attributes' => array(
+      'multiple' => TRUE,
+      'size' => 10,
+    ),
     'quick_form_type' => 'Element',
-    'X_options_callback' => 'CRM_Paymentui_Form_Settings::getPaymentProcessorOptions',
+    'X_options_callback' => 'CRM_Paymentui_Form_Settings::getExcludeStatusOptions',
   ),
  );

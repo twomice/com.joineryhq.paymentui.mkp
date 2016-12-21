@@ -20,8 +20,15 @@
                   <td class="">{$row.paid|crmMoney}</td>
                   <td class="">{$row.balance|crmMoney}</td>
 
-                  <td class="">{$form.payment[$row.pid].html|crmMoney}</td>
-
+                  <td class="paymentui-amount">
+                    {if !$row.is_counted}
+                      {$row.status}
+                    {elseif $form.payment[$row.pid].html}
+                      {$form.payment[$row.pid].html|crmMoney}
+                    {else}
+                      Payment completed
+                    {/if}
+                  </td>
                 </tr>
               {/foreach}
               {if $contactId}

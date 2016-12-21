@@ -3,19 +3,54 @@
 class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
 
   static function getParticipantInfo($contactID) {
+    // Get participant statuses.
+    $result = civicrm_api3('ParticipantStatusType', 'get', array(
+      'options' => array('limit' => 0),
+    ));
+    $participant_statuses = $result['values'];
+
+
+    // Get related contacts for which this contact may have paid.
     $relatedContactIDs = self::getRelatedContacts($contactID);
     $relatedContactIDs[] = $contactID;
-    $relContactIDs = implode(',', $relatedContactIDs);
+
+    // Find out which statuses to exclude.
+    $api_params = array(
+      'return' => array(
+        'paymentui_exclude_participant_status',
+      ),
+    );
+    $result = civicrm_api3('setting', 'get', $api_params);
+    $paymentui_exclude_participant_status = CRM_Utils_Array::value('paymentui_exclude_participant_status', $result['values'][CRM_Core_Config::domainID()], array(0));
+
+
+    $query_params = array();
+    $cid_placeholders = array();
+    $i = 1;
+    foreach ($relatedContactIDs as $param) {
+      $cid_placeholders[] = '%'. $i;
+      $query_params[$i] = array($param, 'Int');
+      $i++;
+    }
+    $status_placeholders = array();
+    foreach ($paymentui_exclude_participant_status as $param) {
+      $status_placeholders[] = '%'. $i;
+      $query_params[$i] = array($param, 'Int');
+      $i++;
+    }
 
     //Get participant info for the primary and related contacts
-    $sql = "SELECT p.id, p.contact_id, e.title, c.display_name, pp.contribution_id FROM civicrm_participant p
+    $sql = "SELECT p.id, p.contact_id, p.status_id, e.title, c.display_name, pp.contribution_id FROM civicrm_participant p
 			INNER JOIN civicrm_contact c ON ( p.contact_id =  c.id )
 			INNER JOIN civicrm_event e ON ( p.event_id = e.id )
 			INNER JOIN civicrm_participant_payment pp ON ( p.id = pp.participant_id )
 			WHERE
-			p.contact_id IN ($relContactIDs)
-			AND (p.status_id = 14 OR p.status_id = 5) AND p.is_test = 0";
-    $dao = CRM_Core_DAO::executeQuery($sql);
+			p.contact_id IN (". implode(',', $cid_placeholders) .")
+			AND (p.status_id NOT IN(". implode(',', $status_placeholders) ."))
+      AND p.is_test = 0
+      AND ifnull(end_date, start_date) > NOW()
+    ";
+    $dao = CRM_Core_DAO::executeQuery($sql, $query_params);
 
     if ($dao->N) {
       while ($dao->fetch()) {
@@ -24,6 +59,17 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
         //Get display names of the participants and additional participants, if any
         $displayNames = self::getDisplayNames($dao->id, $dao->display_name);
 
+        // For reasons I don't understand, CRM_Contribute_BAO_Contribution::getPaymentInfo()
+        // swaps $paid and $balance if either is 0. Swap them back now.
+        if ($paymentDetails['balance'] == 0 || $paymentDetails['paid'] == 0) {
+          $balance = $paymentDetails['paid'];
+          $paid = $paymentDetails['balance'];
+        }
+        else {
+          $balance = $paymentDetails['balance'];
+          $paid = $paymentDetails['paid'];
+        }
+
         //Create an array with all the participant and payment information
         $participantInfo[$dao->id]['pid'] = $dao->id;
         $participantInfo[$dao->id]['cid'] = $dao->contact_id;
@@ -31,14 +77,18 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
         $participantInfo[$dao->id]['event_name'] = $dao->title;
         $participantInfo[$dao->id]['contact_name'] = $displayNames;
         $participantInfo[$dao->id]['total_amount'] = $paymentDetails['total'];
-        $participantInfo[$dao->id]['paid'] = $paymentDetails['paid'];
-        $participantInfo[$dao->id]['balance'] = $paymentDetails['balance'];
+        $participantInfo[$dao->id]['paid'] = $paid;
+        $participantInfo[$dao->id]['balance'] = $balance;
         $participantInfo[$dao->id]['rowClass'] = 'row_' . $dao->id;
         $participantInfo[$dao->id]['payLater'] = $paymentDetails['payLater'];
+        $participantInfo[$dao->id]['status'] = $participant_statuses[$dao->status_id]['label'];
+        $participantInfo[$dao->id]['is_counted'] = $participant_statuses[$dao->status_id]['is_counted'];
+        $participantInfo[$dao->id]['status_id'] = $dao->status_id;
       }
     } else {
       return FALSE;
     }
+    
     return $participantInfo;
   }
 

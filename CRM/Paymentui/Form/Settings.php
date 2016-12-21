@@ -174,30 +174,17 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
     return $ret;
   }
 
-  public static function getPaymentProcessorOptions() {
-    $options = array(
-      '' => '-- '. ts('select') .'-- ',
-    );
-    $result = civicrm_api3('PaymentProcessor', 'get', array(
+  public static function getExcludeStatusOptions() {
+    $options = array();
+    $result = civicrm_api3('ParticipantStatusType', 'get', array(
       'options' => array('limit' => 0),
     ));
     foreach ($result['values'] as $id => $value) {
       $id = $value['id'];
-      $label = $value['name'];
-      if (!$value['is_test']) {
-        $label .= ' ('. ts('TEST') .')';
-      }
-      if (!$value['is_active']) {
-        $label = ts('DISABLED') .': ' . $label;
-        $disabled_options[$id] = $label;
-      }
-      else {
-        $options[$id] = $label;
-      }
+      $label = $value['label'];
+      $options[$id] = $label;
     }
     asort($options);
-    asort($disabled_options);
-    $options += $disabled_options;
     return $options;
   }
 

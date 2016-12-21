@@ -107,7 +107,9 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
 
       $this->assign('participantInfo', $this->_participantInfo);
       foreach ($this->_participantInfo as $pid => $pInfo) {
-        $element = & $this->add('text', "payment[$pid]", null, array('onkeyup' => 'calculateTotal();'), false);
+        if ($pInfo['balance']) {
+          $element = & $this->add('text', "payment[$pid]", null, array('onkeyup' => 'calculateTotal();'), false);
+        }
       }
       CRM_Contribute_Form_ContributionBase::assignToTemplate();
 
