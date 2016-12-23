@@ -115,3 +115,39 @@ function paymentui_civicrm_permission(&$permissions) {
     ),
   );
 }
+
+/**
+ * Implements hook_civicrm_navigationMenu().
+ *
+ * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_navigationMenu
+ */
+function paymentui_civicrm_navigationMenu(&$menu) {
+  _paymentui_get_max_navID($menu, $max_navID);
+  _paymentui_civix_insert_navigation_menu($menu, 'Administer/Customize Data and Screens', array(
+    'label' => ts('Partial Payments UI', array('domain' => 'com.joineryhq.paymentui.mkp')),
+    'name' => 'Partial Payments UI',
+    'url' => 'civicrm/admin/paymentui/settings',
+    'permission' => 'administer CiviCRM',
+    'operator' => 'AND',
+    'separator' => NULL,
+    'navID' => ++$max_navID,
+  ));
+  _paymentui_civix_navigationMenu($menu);
+}
+
+/**
+ * For an array of menu items, recursively get the value of the greatest navID
+ * attribute.
+ * @param <type> $menu
+ * @param <type> $max_navID
+ */
+function _paymentui_get_max_navID(&$menu, &$max_navID = NULL) {
+  foreach ($menu as $id => $item) {
+    if (!empty($item['attributes']['navID'])) {
+      $max_navID = max($max_navID, $item['attributes']['navID']);
+    }
+    if (!empty($item['child'])) {
+      _paymentui_get_max_navID($item['child'], $max_navID);
+    }
+  }
+}

@@ -11,7 +11,7 @@
   <item>
     <path>civicrm/admin/paymentui/settings</path>
     <page_callback>CRM_Paymentui_Form_Settings</page_callback>
-    <title>Settings</title>
+    <title>Partial Payments User Interface: Settings</title>
     <access_arguments>administer CiviCRM</access_arguments>
   </item>
 </menu>
