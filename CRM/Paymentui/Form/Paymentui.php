@@ -7,6 +7,7 @@ require_once 'CRM/Core/Form.php';
  */
 class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
 
+  static $extensionName = 'com.joineryhq.paymentui.mkp';
   public $_params;
   public $_amount;
   public $_mode;
@@ -108,7 +109,11 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
       $this->assign('participantInfo', $this->_participantInfo);
       foreach ($this->_participantInfo as $pid => $pInfo) {
         if ($pInfo['balance']) {
-          $element = & $this->add('text', "payment[$pid]", null, array('onkeyup' => 'calculateTotal();'), false);
+          $payment_html_attributes = array(
+            'class' => 'paymentui-payment-amount',
+            'onkeyup' => 'calculateTotal();'
+          );
+          $element = & $this->add('text', "payment[$pid]", null, $payment_html_attributes, false);
         }
       }
       CRM_Contribute_Form_ContributionBase::assignToTemplate();
@@ -125,6 +130,18 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
       $this->assign('elementNames', $this->getRenderableElementNames());
       parent::buildQuickForm();
       $this->addFormRule(array('CRM_Paymentui_Form_Paymentui', 'formRule'), $this);
+    }
+
+    // Include extra CSS styles.
+    $style_path = CRM_Core_Resources::singleton()->getPath(self::$extensionName, 'css/extension.css');
+    if ($style_path) {
+      CRM_Core_Resources::singleton()->addStyleFile(self::$extensionName, 'css/extension.css');
+    }
+
+    // Include extra JavaScript.
+    $style_path = CRM_Core_Resources::singleton()->getPath(self::$extensionName, 'js/paymentui_add_payment.js');
+    if ($style_path) {
+      CRM_Core_Resources::singleton()->addScriptFile(self::$extensionName, 'js/paymentui_add_payment.js');
     }
   }
 

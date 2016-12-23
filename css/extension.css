@@ -1,0 +1,17 @@
+/**
+ * Custom styles for paymentui-related pages.
+ */
+
+/* Smarty {crmButton} tag inserts an icon no matter what. But we don't want an
+ * icon. So hide it.
+ */
+a#paymentui-button-show-payable span.icon,
+a#paymentui-button-show-all span.icon
+{
+  display: none;
+}
+
+p#empty-events-list-notice {
+  clear: both;
+  padding-top: 1em;
+}
