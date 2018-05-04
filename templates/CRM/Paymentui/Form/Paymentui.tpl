@@ -17,11 +17,11 @@
         <tr class="{$row.rowClass}">
           <td class="paymentui-event-name">{$row.event_name}</td>
           <td class="paymentui-contact-name">{$row.contact_name}</td>
-          <td class="paymentui-total-amount">{$row.total_amount|crmMoney}</td>
-          <td class="paymentui-amount-paid">{$row.paid|crmMoney}</td>
-          <td class="paymentui-balance">{$row.balance|crmMoney}</td>
+          <td class="paymentui-total-amount nowrap">{$row.total_amount|crmMoney}</td>
+          <td class="paymentui-amount-paid nowrap">{$row.paid|crmMoney}</td>
+          <td class="paymentui-balance nowrap">{$row.balance|crmMoney}</td>
 
-          <td class="paymentui-payment-amount">
+          <td class="paymentui-payment-amount nowrap">
             {if !$row.is_counted}
               {$row.status}
             {elseif $form.payment[$row.pid].html}
