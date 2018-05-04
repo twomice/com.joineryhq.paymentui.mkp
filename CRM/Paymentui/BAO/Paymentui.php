@@ -18,11 +18,13 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
     $api_params = array(
       'return' => array(
         'paymentui_exclude_participant_status',
+        'paymentui_exclude_participant_role',
       ),
     );
     $result = civicrm_api3('setting', 'get', $api_params);
-    $paymentui_exclude_participant_status = CRM_Utils_Array::value('paymentui_exclude_participant_status', $result['values'][CRM_Core_Config::domainID()], array(0));
-
+    $paymentui_exclude_participant_status = CRM_Utils_Array::value('paymentui_exclude_participant_status', $result['values'][CRM_Core_Config::domainID()], array());
+    $paymentui_exclude_participant_status[] = 0;
+    $paymentui_exclude_participant_role = CRM_Utils_Array::value('paymentui_exclude_participant_role', $result['values'][CRM_Core_Config::domainID()], array());
 
     $query_params = array();
     $cid_placeholders = array();
@@ -43,13 +45,26 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
     $sql = "SELECT p.id, p.contact_id, p.status_id, e.title, c.display_name, pp.contribution_id FROM civicrm_participant p
 			INNER JOIN civicrm_contact c ON ( p.contact_id =  c.id )
 			INNER JOIN civicrm_event e ON ( p.event_id = e.id )
-			INNER JOIN civicrm_participant_payment pp ON ( p.id = pp.participant_id )
+			LEFT JOIN civicrm_participant_payment pp ON ( p.id = pp.participant_id )
 			WHERE
 			p.contact_id IN (". implode(',', $cid_placeholders) .")
 			AND (p.status_id NOT IN(". implode(',', $status_placeholders) ."))
       AND p.is_test = 0
       AND ifnull(end_date, start_date) > NOW()
     ";
+
+    foreach ($paymentui_exclude_participant_role as $param) {
+      // Not exactly equal to $i;
+      $sql .= "AND p.role_id != %{$i} ";
+      $query_params[$i] = array($param, 'Int');
+      $i++;
+      // Not in the middle of a multi-value string.
+      $sql .= "AND p.role_id NOT LIKE '%" . CRM_core_dao::VALUE_SEPARATOR . (int)$param . CRM_core_dao::VALUE_SEPARATOR . "%'";
+      // Not at the start of a multi-value string.
+      $sql .= "AND p.role_id NOT LIKE '%" . CRM_core_dao::VALUE_SEPARATOR . (int)$param . "'";
+      // Not at the end of a multi-value string.
+      $sql .= "AND p.role_id NOT LIKE '" . (int)$param . CRM_core_dao::VALUE_SEPARATOR . "%'\n";
+    }    
     $dao = CRM_Core_DAO::executeQuery($sql, $query_params);
 
     if ($dao->N) {
@@ -59,17 +74,6 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
         //Get display names of the participants and additional participants, if any
         $displayNames = self::getDisplayNames($dao->id, $dao->display_name);
 
-        // For reasons I don't understand, CRM_Contribute_BAO_Contribution::getPaymentInfo()
-        // swaps $paid and $balance if either is 0. Swap them back now.
-        if ($paymentDetails['balance'] == 0 || $paymentDetails['paid'] == 0) {
-          $balance = $paymentDetails['paid'];
-          $paid = $paymentDetails['balance'];
-        }
-        else {
-          $balance = $paymentDetails['balance'];
-          $paid = $paymentDetails['paid'];
-        }
-
         //Create an array with all the participant and payment information
         $participantInfo[$dao->id]['pid'] = $dao->id;
         $participantInfo[$dao->id]['cid'] = $dao->contact_id;
@@ -77,8 +81,8 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
         $participantInfo[$dao->id]['event_name'] = $dao->title;
         $participantInfo[$dao->id]['contact_name'] = $displayNames;
         $participantInfo[$dao->id]['total_amount'] = $paymentDetails['total'];
-        $participantInfo[$dao->id]['paid'] = $paid;
-        $participantInfo[$dao->id]['balance'] = $balance;
+        $participantInfo[$dao->id]['paid'] = $paymentDetails['paid'];
+        $participantInfo[$dao->id]['balance'] = $paymentDetails['balance'];
         $participantInfo[$dao->id]['rowClass'] = 'row_' . $dao->id;
         $participantInfo[$dao->id]['payLater'] = $paymentDetails['payLater'];
         $participantInfo[$dao->id]['status'] = $participant_statuses[$dao->status_id]['label'];
@@ -88,7 +92,6 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
     } else {
       return FALSE;
     }
-    
     return $participantInfo;
   }
 

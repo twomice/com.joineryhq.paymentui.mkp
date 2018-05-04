@@ -187,6 +187,21 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
     asort($options);
     return $options;
   }
+  
+  public static function getExcludeRoleOptions() {
+    $options = array();
+    $result = civicrm_api3('OptionValue', 'get', array(
+      'option_group_id' => "participant_role",
+      'options' => array('limit' => 0),
+    ));    
+    foreach ($result['values'] as $id => $value) {
+      $id = $value['value'];
+      $label = $value['label'];
+      $options[$id] = $label;
+    }
+    asort($options);
+    return $options;
+  }
 
 
   public function getSettingOptions($setting) {
