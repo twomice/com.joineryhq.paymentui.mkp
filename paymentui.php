@@ -34,9 +34,11 @@ function paymentui_civicrm_buildForm($formName, &$form) {
  */
 function paymentui_civicrm_postProcess($formName, &$form) {
   // Save is_paymentui setting as set in form submission.
-  $eventSettings = CRM_Paymentui_Settings::getEventSettings($form->_id);
-  $eventSettings['is_paymentui'] = CRM_Utils_Array::value('is_paymentui', $form->_submitValues, 0);
-  CRM_Paymentui_Settings::saveAllEventSettings($form->_id, $eventSettings);
+  if ($formName == 'CRM_Event_Form_ManageEvent_Fee') {
+    $eventSettings = CRM_Paymentui_Settings::getEventSettings($form->_id);
+    $eventSettings['is_paymentui'] = CRM_Utils_Array::value('is_paymentui', $form->_submitValues, 0);
+    CRM_Paymentui_Settings::saveAllEventSettings($form->_id, $eventSettings);
+  }
 }
 
 /**
