@@ -2,13 +2,12 @@
 
 class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
 
-  static function getParticipantInfo($contactID) {
+  public static function getParticipantInfo($contactID) {
     // Get participant statuses.
     $result = civicrm_api3('ParticipantStatusType', 'get', array(
       'options' => array('limit' => 0),
     ));
     $participant_statuses = $result['values'];
-
 
     // Get related contacts for which this contact may have paid.
     $relatedContactIDs = self::getRelatedContacts($contactID);
@@ -30,13 +29,13 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
     $cid_placeholders = array();
     $i = 1;
     foreach ($relatedContactIDs as $param) {
-      $cid_placeholders[] = '%'. $i;
+      $cid_placeholders[] = '%' . $i;
       $query_params[$i] = array($param, 'Int');
       $i++;
     }
     $status_placeholders = array();
     foreach ($paymentui_exclude_participant_status as $param) {
-      $status_placeholders[] = '%'. $i;
+      $status_placeholders[] = '%' . $i;
       $query_params[$i] = array($param, 'Int');
       $i++;
     }
@@ -47,8 +46,8 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
 			INNER JOIN civicrm_event e ON ( p.event_id = e.id )
 			LEFT JOIN civicrm_participant_payment pp ON ( p.id = pp.participant_id )
 			WHERE
-			p.contact_id IN (". implode(',', $cid_placeholders) .")
-			AND (p.status_id NOT IN(". implode(',', $status_placeholders) ."))
+			p.contact_id IN (" . implode(',', $cid_placeholders) . ")
+			AND (p.status_id NOT IN(" . implode(',', $status_placeholders) . "))
       AND p.is_test = 0
       AND ifnull(end_date, start_date) > NOW()
     ";
@@ -59,12 +58,12 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
       $query_params[$i] = array($param, 'Int');
       $i++;
       // Not in the middle of a multi-value string.
-      $sql .= "AND p.role_id NOT LIKE '%" . CRM_core_dao::VALUE_SEPARATOR . (int)$param . CRM_core_dao::VALUE_SEPARATOR . "%'";
+      $sql .= "AND p.role_id NOT LIKE '%" . CRM_core_dao::VALUE_SEPARATOR . (int) $param . CRM_core_dao::VALUE_SEPARATOR . "%'";
       // Not at the start of a multi-value string.
-      $sql .= "AND p.role_id NOT LIKE '%" . CRM_core_dao::VALUE_SEPARATOR . (int)$param . "'";
+      $sql .= "AND p.role_id NOT LIKE '%" . CRM_core_dao::VALUE_SEPARATOR . (int) $param . "'";
       // Not at the end of a multi-value string.
-      $sql .= "AND p.role_id NOT LIKE '" . (int)$param . CRM_core_dao::VALUE_SEPARATOR . "%'\n";
-    }    
+      $sql .= "AND p.role_id NOT LIKE '" . (int) $param . CRM_core_dao::VALUE_SEPARATOR . "%'\n";
+    }
     $dao = CRM_Core_DAO::executeQuery($sql, $query_params);
 
     if ($dao->N) {
@@ -89,17 +88,18 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
         $participantInfo[$dao->id]['is_counted'] = $participant_statuses[$dao->status_id]['is_counted'];
         $participantInfo[$dao->id]['status_id'] = $dao->status_id;
       }
-    } else {
+    }
+    else {
       return FALSE;
     }
     return $participantInfo;
   }
 
   /**
-   * * Helper function to get formatted display names of the the participants
-   * * Purpose - to generate comma separated display names of primary and additional participants
-   * */
-  static function getDisplayNames($participantId, $display_name) {
+   * Helper function to get formatted display names of the the participants
+   * Purpose - to generate comma separated display names of primary and additional participants
+   */
+  public static function getDisplayNames($participantId, $display_name) {
     $displayName[] = $display_name;
     //Get additional participant names
     $additionalPIds = CRM_Event_BAO_Participant::getAdditionalParticipantIds($participantId);
@@ -114,10 +114,10 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
   }
 
   /**
-   * * Helper function to get related contacts of tthe contact
-   * * Checks for Child, Spouse, Child/Ward relationship types
-   * */
-  static function getRelatedContacts($contactID) {
+   * Helper function to get related contacts of tthe contact
+   * Checks for Child, Spouse, Child/Ward relationship types
+   */
+  public static function getRelatedContacts($contactID) {
     //Get relationship type id of Spouse, Child, Child/Ward of
     $relTypeIDs = array();
     $relTypeIDs['parent'] = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_RelationshipType', 'Parent of', 'id', 'label_a_b');
@@ -135,7 +135,8 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
 
     if ($isRelatedContact) {
       return $relatedContactIDs;
-    } else {
+    }
+    else {
       return FALSE;
     }
   }
@@ -143,7 +144,7 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
   /**
    * * Creates a financial trxn record for the CC transaction of the total amount
    * */
-  function createFinancialTrxn($payment) {
+  public function createFinancialTrxn($payment) {
     //Set Payment processor to Auth CC
     //To be changed for switching to live processor
     $payment_processor_id = CRM_Core_DAO::getFieldValue('CRM_Financial_DAO_PaymentProcessor', 'Credit Card', 'id', 'name');
@@ -175,13 +176,12 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
     }
 
     $trxn->save();
-    $entityFinancialTrxnParams =
-            array(
-              'entity_table' => "civicrm_financial_trxn",
-              'entity_id' => $trxn->id,
-              'financial_trxn_id' => $trxn->id,
-              'amount' => $params['total_amount'],
-              'currency' => $trxn->currency,
+    $entityFinancialTrxnParams = array(
+      'entity_table' => "civicrm_financial_trxn",
+      'entity_id' => $trxn->id,
+      'financial_trxn_id' => $trxn->id,
+      'amount' => $params['total_amount'],
+      'currency' => $trxn->currency,
     );
     $entityTrxn = new CRM_Financial_DAO_EntityFinancialTrxn();
     $entityTrxn->copyValues($entityFinancialTrxnParams);

@@ -41,7 +41,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
     if (!$this->payment_processor_id) {
       CRM_Core_Error::fatal(ts('No default payment processor is available. Cannot continue.'));
     }
-        
+
     //Set Payment processor to default
     $this->_paymentProcessor = CRM_Financial_BAO_PaymentProcessor::getPayment($this->payment_processor_id, 'live');
 
@@ -111,9 +111,9 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
         if ($pInfo['balance']) {
           $payment_html_attributes = array(
             'class' => 'paymentui-payment-amount',
-            'onkeyup' => 'calculateTotal();'
+            'onkeyup' => 'calculateTotal();',
           );
-          $element = & $this->add('text', "payment[$pid]", null, $payment_html_attributes, false);
+          $element = & $this->add('text', "payment[$pid]", NULL, $payment_html_attributes, FALSE);
         }
       }
       CRM_Contribute_Form_ContributionBase::assignToTemplate();
@@ -158,7 +158,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
    * @access public
    * @static
    */
-  static function formRule($fields, $files, $self) {
+  public static function formRule($fields, $files, $self) {
     $errors = array();
     //Validate the amount: should not be more than balance and should be numeric
     $total = 0;
@@ -189,7 +189,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
       'billing_city-5' => 'City',
       'billing_state_province_id-5' => 'State Province',
       'billing_postal_code-5' => 'Postal Code',
-      'billing_country_id-5' => 'Country'
+      'billing_country_id-5' => 'Country',
     );
 
     foreach ($required as $name => $fld) {
@@ -275,7 +275,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
    *
    * @return array (string)
    */
-  function getRenderableElementNames() {
+  private function getRenderableElementNames() {
     // The _elements list includes some items which should not be
     // auto-rendered in the loop -- such as "qfKey" and "buttons".  These
     // items don't have labels.  We'll identify renderable by filtering on

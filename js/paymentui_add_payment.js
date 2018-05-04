@@ -8,7 +8,7 @@ CRM.$(function($){
 
   // Start by showing all events.
   paymentui_add_payment.show_all();
-})
+});
 
 var paymentui_add_payment = {
   // Click handler for "show payable" button.
@@ -16,17 +16,17 @@ var paymentui_add_payment = {
     // For each row, hide it if it doesn't have a payment field, otherwise be
     // sure it's showing.
     CRM.$('table#paymentui-events-list tbody tr').each(function(idx, el) {
-      $el = CRM.$(el)
+      $el = CRM.$(el);
       if ($el.find('input.paymentui-payment-amount').length > 0) {
         $el.show();
       }
       else {
         $el.hide();
       }
-    })
+    });
     paymentui_add_payment.toggle_list_show();
-    CRM.$('a#paymentui-button-show-payable').hide()
-    CRM.$('a#paymentui-button-show-all').show()
+    CRM.$('a#paymentui-button-show-payable').hide();
+    CRM.$('a#paymentui-button-show-all').show();
   },
 
   // Click handler for "show all" button.
@@ -34,8 +34,8 @@ var paymentui_add_payment = {
     // Just show all the rows.
     CRM.$('table#paymentui-events-list tbody tr').show();
     paymentui_add_payment.toggle_list_show();
-    CRM.$('a#paymentui-button-show-payable').show()
-    CRM.$('a#paymentui-button-show-all').hide()
+    CRM.$('a#paymentui-button-show-payable').show();
+    CRM.$('a#paymentui-button-show-all').hide();
   },
 
   // Toggle display of relevant page elements based on visible contents of
@@ -53,4 +53,4 @@ var paymentui_add_payment = {
       CRM.$('p#empty-events-list-notice').show();
     }
   }
-}
+};

@@ -11,7 +11,7 @@ return array(
     'is_contact' => 0,
     'default' => array(0),
     'description' => ts('Participation records in any of the selected statuses will not appear on the payments page.') . ' (' . ts('Use Ctrl+click to select or unselect multiple options.') . ')',
-    'title' =>  ts('Exclude by status'),
+    'title' => ts('Exclude by status'),
     'help_text' => '',
     'html_type' => 'Select',
     'html_attributes' => array(
@@ -31,7 +31,7 @@ return array(
     'is_contact' => 0,
     'default' => array(0),
     'description' => ts('Participation records in any of the selected roless will not appear on the payments page.') . ' (' . ts('Use Ctrl+click to select or unselect multiple options.') . ')',
-    'title' =>  ts('Exclude by role'),
+    'title' => ts('Exclude by role'),
     'help_text' => '',
     'html_type' => 'Select',
     'html_attributes' => array(
@@ -41,4 +41,4 @@ return array(
     'quick_form_type' => 'Element',
     'X_options_callback' => 'CRM_Paymentui_Form_Settings::getExcludeRoleOptions',
   ),
- );
+);

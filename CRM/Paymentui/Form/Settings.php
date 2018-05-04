@@ -16,37 +16,31 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
   private $_submittedValues = array();
   private $_settings = array();
 
-  function __construct(
-    $state = NULL,
-    $action = CRM_Core_Action::NONE,
-    $method = 'post',
-    $name = NULL
+  public function __construct(
+  $state = NULL, $action = CRM_Core_Action::NONE, $method = 'post', $name = NULL
   ) {
 
     $this->setSettings();
 
     parent::__construct(
-      $state = NULL,
-      $action = CRM_Core_Action::NONE,
-      $method = 'post',
-      $name = NULL
+      $state = NULL, $action = CRM_Core_Action::NONE, $method = 'post', $name = NULL
     );
   }
-  function buildQuickForm() {
+
+  public function buildQuickForm() {
     $settings = $this->_settings;
     foreach ($settings as $name => $setting) {
       if (isset($setting['quick_form_type'])) {
-        switch($setting['html_type']) {
+        switch ($setting['html_type']) {
           case 'Select':
             $this->add(
               $setting['html_type'], // field type
               $setting['name'], // field name
               $setting['title'], // field label
-              $this->getSettingOptions($setting),
-              NULL,
-              $setting['html_attributes']
+              $this->getSettingOptions($setting), NULL, $setting['html_attributes']
             );
             break;
+
           case 'CheckBox':
             $this->addCheckBox(
               $setting['name'], // field name
@@ -54,6 +48,7 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
               array_flip($this->getSettingOptions($setting))
             );
             break;
+
           case 'Radio':
             $this->addRadio(
               $setting['name'], // field name
@@ -61,6 +56,7 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
               $this->getSettingOptions($setting)
             );
             break;
+
           default:
             $add = 'add' . $setting['quick_form_type'];
             if ($add == 'addElement') {
@@ -75,7 +71,7 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
       $descriptions[$setting['name']] = ts($setting['description']);
 
       if (!empty($setting['X_form_rules_args'])) {
-        $rules_args = (array)$setting['X_form_rules_args'];
+        $rules_args = (array) $setting['X_form_rules_args'];
         foreach ($rules_args as $rule_args) {
           array_unshift($rule_args, $setting['name']);
           call_user_func_array(array($this, 'addRule'), $rule_args);
@@ -85,11 +81,11 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
     $this->assign("descriptions", $descriptions);
 
     $this->addButtons(array(
-      array (
+      array(
         'type' => 'submit',
         'name' => ts('Submit'),
         'isDefault' => TRUE,
-      )
+      ),
     ));
 
     $style_path = CRM_Core_Resources::singleton()->getPath(self::$extensionName, 'css/extension.css');
@@ -102,7 +98,7 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
     parent::buildQuickForm();
   }
 
-  function postProcess() {
+  public function postProcess() {
     $this->_submittedValues = $this->exportValues();
     $this->saveSettings();
     CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/admin/paymentui/settings', 'reset=1'));
@@ -114,7 +110,7 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
    *
    * @return array (string)
    */
-  function getRenderableElementNames() {
+  public function getRenderableElementNames() {
     // The _elements list includes some items which should not be
     // auto-rendered in the loop -- such as "qfKey" and "buttons". These
     // items don't have labels. We'll identify renderable by filtering on
@@ -131,26 +127,22 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
 
   /**
    * Define the list of settings we are going to allow to be set on this form.
-   *
-   * @return array
    */
-  function setSettings() {
+  public function setSettings() {
     if (empty($this->_settings)) {
       $this->_settings = self::getSettings();
     }
   }
 
-  static function getSettings() {
-    $settings =  civicrm_api3('setting', 'getfields', array('filters' => self::$settingFilter));
+  public static function getSettings() {
+    $settings = civicrm_api3('setting', 'getfields', array('filters' => self::$settingFilter));
     return $settings['values'];
   }
 
   /**
    * Get the settings we are going to allow to be set on this form.
-   *
-   * @return array
    */
-  function saveSettings() {
+  public function saveSettings() {
     $settings = $this->_settings;
     $values = array_intersect_key($this->_submittedValues, $settings);
     civicrm_api3('setting', 'create', $values);
@@ -167,7 +159,7 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
    *
    * @see CRM_Core_Form::setDefaultValues()
    */
-  function setDefaultValues() {
+  public function setDefaultValues() {
     $result = civicrm_api3('setting', 'get', array('return' => array_keys($this->_settings)));
     $domainID = CRM_Core_Config::domainID();
     $ret = CRM_Utils_Array::value($domainID, $result['values']);
@@ -187,13 +179,13 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
     asort($options);
     return $options;
   }
-  
+
   public static function getExcludeRoleOptions() {
     $options = array();
     $result = civicrm_api3('OptionValue', 'get', array(
       'option_group_id' => "participant_role",
       'options' => array('limit' => 0),
-    ));    
+    ));
     foreach ($result['values'] as $id => $value) {
       $id = $value['value'];
       $label = $value['label'];
@@ -203,7 +195,6 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
     return $options;
   }
 
-
   public function getSettingOptions($setting) {
     if (!empty($setting['X_options_callback']) && is_callable($setting['X_options_callback'])) {
       return call_user_func($setting['X_options_callback']);
@@ -212,5 +203,5 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
       return CRM_Utils_Array::value('X_options', $setting, array());
     }
   }
-}
 
+}
