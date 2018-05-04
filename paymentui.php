@@ -1,6 +1,43 @@
 <?php
 
 require_once 'paymentui.civix.php';
+use CRM_Paymentui_ExtensionUtil as E;
+
+/**
+ * Implements hook_civicrm_buildForm().
+ *
+ * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_buildForm
+ */
+function paymentui_civicrm_buildForm($formName, &$form) {
+  if ($formName == 'CRM_Event_Form_ManageEvent_Fee') {
+    // Add is_paymentui checkbox to form in 'beforeHookFormElements').
+    $form->addElement('checkbox', 'is_paymentui', E::ts('Include participants in Partial Payments UI'));
+    $tpl = & CRM_Core_Smarty::singleton();
+    $bhfe = (array) $tpl->get_template_vars('beginHookFormElements');
+    $bhfe[] = 'is_paymentui';
+    $form->assign('beginHookFormElements', $bhfe);
+    // Get value from settings and set default.
+    $eventSettings = CRM_Paymentui_Settings::getEventSettings($form->_id);
+    $defaults = array(
+      'is_paymentui' => CRM_Utils_Array::value('is_paymentui', $eventSettings, 0),
+    );
+    $form->setDefaults($defaults);
+    // Add JavaScript which will position the field correctly within the form.
+    CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.paymentui.mkp', 'js/CRM_Event_Form_ManageEvent_Fee.js');
+  }
+}
+
+/**
+ * Implements hook_civicrm_postProcess().
+ *
+ * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_postProcess
+ */
+function paymentui_civicrm_postProcess($formName, &$form) {
+  // Save is_paymentui setting as set in form submission.
+  $eventSettings = CRM_Paymentui_Settings::getEventSettings($form->_id);
+  $eventSettings['is_paymentui'] = CRM_Utils_Array::value('is_paymentui', $form->_submitValues, 0);
+  CRM_Paymentui_Settings::saveAllEventSettings($form->_id, $eventSettings);
+}
 
 /**
  * Implements hook_civicrm_config().
@@ -99,6 +136,11 @@ function paymentui_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
   _paymentui_civix_civicrm_alterSettingsFolders($metaDataFolders);
 }
 
+/**
+ * Implements hook_civicrm_permission().
+ *
+ * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_permission
+ */
 function paymentui_civicrm_permission(&$permissions) {
   $permissions += array(
     'paymentui_add_payments' => array(
