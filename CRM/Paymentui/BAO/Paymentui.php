@@ -41,15 +41,18 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
     }
 
     //Get participant info for the primary and related contacts
-    $sql = "SELECT p.id, p.contact_id, p.status_id, e.title, c.display_name, pp.contribution_id FROM civicrm_participant p
-			INNER JOIN civicrm_contact c ON ( p.contact_id =  c.id )
-			INNER JOIN civicrm_event e ON ( p.event_id = e.id )
-			LEFT JOIN civicrm_participant_payment pp ON ( p.id = pp.participant_id )
+    $sql = "
+      SELECT p.id, p.contact_id, p.status_id, e.title, c.display_name, pp.contribution_id, e.id as event_id
+      FROM
+        civicrm_participant p
+        INNER JOIN civicrm_contact c ON p.contact_id = c.id
+        INNER JOIN civicrm_event e ON p.event_id = e.id
+        LEFT JOIN civicrm_participant_payment pp ON p.id = pp.participant_id
 			WHERE
-			p.contact_id IN (" . implode(',', $cid_placeholders) . ")
-			AND (p.status_id NOT IN(" . implode(',', $status_placeholders) . "))
-      AND p.is_test = 0
-      AND ifnull(end_date, start_date) > NOW()
+        p.contact_id IN (" . implode(',', $cid_placeholders) . ")
+        AND (p.status_id NOT IN (" . implode(',', $status_placeholders) . "))
+        AND p.is_test = 0
+        AND ifnull(end_date, start_date) > NOW()
     ";
 
     foreach ($paymentui_exclude_participant_role as $param) {
@@ -66,8 +69,14 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
     }
     $dao = CRM_Core_DAO::executeQuery($sql, $query_params);
 
+    $participantInfo = array();
     if ($dao->N) {
       while ($dao->fetch()) {
+        if (!self::eventIsPaymentui($dao->event_id)) {
+          // This event is not configured to be displayed on the paymentui page,
+          // so skip this record.
+          continue;
+        }
         //Get the payment details of all the participants
         $paymentDetails = CRM_Contribute_BAO_Contribution::getPaymentInfo($dao->id, 'event', FALSE, TRUE);
         //Get display names of the participants and additional participants, if any
@@ -89,10 +98,18 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
         $participantInfo[$dao->id]['status_id'] = $dao->status_id;
       }
     }
-    else {
-      return FALSE;
-    }
     return $participantInfo;
+  }
+
+  /**
+   * Check whether the given is configured for display on the paymentui page.
+   * @param Int $eventId
+   *
+   * @return bool TRUE if configured for display on the paymentui page; otherwise false.
+   */
+  public static function eventIsPaymentui($eventId) {
+    $eventSettings = CRM_Paymentui_Settings::getEventSettings($eventId);
+    return CRM_Utils_Array::value('is_paymentui', $eventSettings, 0);
   }
 
   /**
