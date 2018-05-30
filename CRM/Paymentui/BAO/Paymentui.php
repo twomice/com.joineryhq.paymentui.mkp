@@ -219,56 +219,18 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
    * @throws CRM_Exception
    */
   public static function updateParticipantSingleLineItemTotal($participantId, $amount) {
-    $result = civicrm_api3('participant', 'getSingle', array(
-      'sequential' => 1,
-      'id' => $participantId,
-    ));
-    $eventId = CRM_Utils_Array::value('event_id', $result);
+    $contributionId = self::getParticpantPaymentContributionId($participantId);
 
-    $params = array(
-      '1' => array($eventId, 'Int'),
-    );
-    $priceSetId = CRM_Core_DAO::singleValueQuery("
-      SELECT price_set_id
-      FROM civicrm_price_set_entity
-      WHERE
-        entity_table = 'civicrm_event'
-        AND entity_id = %1
-    ", $params);
-    if (!$priceSetId) {
-      throw new CRM_Exception('Could not find a price set for event ' . $eventId);
-    }
 
-    $result = civicrm_api3('PriceField', 'get', array(
-      'sequential' => 1,
-      'price_set_id' => $priceSetId,
-      'api.PriceFieldValue.get' => array(),
-    ));
-    $nonZeroPriceOptionCount = 0;
-    foreach ($result['values'] as $value) {
-      foreach ($value['api.PriceFieldValue.get']['values'] as $priceFieldValue) {
-        if ($priceFieldValue['amount'] != 0) {
-          $nonZeroPriceOptionCount++;
-        }
-        if ($nonZeroPriceOptionCount > 1) {
-          throw new CRM_Exception("Price Set for event $eventId has too many non-zero-valued price options; cannot decide which one to use.");
-        }
-      }
-      if (
-        $value['html_type'] == 'Text' && $value['is_enter_qty'] == '1' && $value['api.PriceFieldValue.get']['count'] == 1 && $value['api.PriceFieldValue.get']['values'][0]['amount'] == 1
-      ) {
-        $priceFieldIdToUpdate = $value['id'];
-      }
-    }
-    if (!$priceFieldIdToUpdate) {
-      throw new CRM_Exception("Price Set for event $eventId should have exactly one text/numeric price field worth 1.00, but none was found; nothing to update.");
-    }
+    $participant = self::getParticipant($participantId);
+    $eventId = CRM_Utils_Array::value('event_id', $participant);
+    $priceField = self::getSingleLineItemPriceFieldForEvent($eventId);
+    $priceFieldId = CRM_Utils_Array::value('id', $priceField);
+    $priceSetId = CRM_Utils_Array::value('price_set_id', $priceField);
 
     // Build variables needed for changing the line item amount.
     $params = CRM_Event_Form_EventFees::setDefaultPriceSet($participantId, $eventId, FALSE);
-    $params['price_' . $priceFieldIdToUpdate] = $amount;
-
-    $contributionId = CRM_Core_DAO::getFieldValue('CRM_Event_DAO_ParticipantPayment', $participantId, 'contribution_id', 'participant_id');
+    $params['price_' . $priceFieldId] = $amount;
 
     $priceSets = CRM_Price_BAO_PriceSet::getSetDetail($priceSetId, FALSE, FALSE);
     $priceSet = CRM_Utils_Array::value($priceSetId, $priceSets);
@@ -287,4 +249,100 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
     return TRUE;
   }
 
+  static function getParticipant($participantId) {
+    static $participant;
+    if (!isset($participant)) {
+      $participant = civicrm_api3('participant', 'getSingle', array(
+        'sequential' => 1,
+        'id' => $participantId,
+      ));
+    }
+    return $participant;
+  }
+
+  static function getParticpantPaymentContributionId($participantId) {
+    $contributionId = CRM_Core_DAO::getFieldValue('CRM_Event_DAO_ParticipantPayment', $participantId, 'contribution_id', 'participant_id');
+    if (!$contributionId) {
+      $participant = self::getParticipant($participantId);
+      $eventId = CRM_Utils_Array::value('event_id', $participant);
+      $contactId = CRM_Utils_Array::value('contact_id', $participant);
+      // get price field
+      $priceField = self::getSingleLineItemPriceFieldForEvent($eventId);
+      $financialTypeId = $priceField['api.PriceFieldValue.get']['values'][0]['financial_type_id'];
+      // create contribution
+      $contributionCreate = civicrm_api3('Contribution', 'create', array(
+        'financial_type_id' => $financialTypeId,
+        'total_amount' => 4.00,
+        'contact_id' => $contactId,
+      ));
+      $createdContributionId = CRM_Utils_Array::value('id', $contributionCreate);
+
+      // create participantPayment
+      if ($createdContributionId) {
+        $participantPaymentCreate = civicrm_api3('ParticipantPayment', 'create', array(
+          'participant_id' => $participantId,
+          'contribution_id' => $createdContributionId,
+        ));
+
+        $participantPaymentGet = civicrm_api3('ParticipantPayment', 'get', array(
+          'participant_id' => $participantId,
+          'contribution_id' => $createdContributionId,
+        ));
+
+
+        if (CRM_Utils_Array::value('id', $participantPaymentCreate)) {
+          $contributionId = $createdContributionId;
+        }
+      }
+    }
+    return $contributionId;
+  }
+
+  static function getSingleLineItemPriceFieldForEvent($eventId) {
+    static $priceField;
+
+    if (!isset($priceField)) {
+      $params = array(
+        '1' => array($eventId, 'Int'),
+      );
+      $priceSetId = CRM_Core_DAO::singleValueQuery("
+        SELECT price_set_id
+        FROM civicrm_price_set_entity
+        WHERE
+          entity_table = 'civicrm_event'
+          AND entity_id = %1
+      ", $params);
+      if (!$priceSetId) {
+        throw new CRM_Exception('Could not find a price set for event ' . $eventId);
+      }
+
+      $result = civicrm_api3('PriceField', 'get', array(
+        'sequential' => 1,
+        'price_set_id' => $priceSetId,
+        'api.PriceFieldValue.get' => array(),
+      ));
+      $nonZeroPriceOptionCount = 0;
+      foreach ($result['values'] as $value) {
+        foreach ($value['api.PriceFieldValue.get']['values'] as $priceFieldValue) {
+          if ($priceFieldValue['amount'] != 0) {
+            $nonZeroPriceOptionCount++;
+          }
+          if ($nonZeroPriceOptionCount > 1) {
+            throw new CRM_Exception("Price Set for event $eventId has too many non-zero-valued price options; cannot decide which one to use.");
+          }
+        }
+        if (
+          $value['html_type'] == 'Text' && $value['is_enter_qty'] == '1' && $value['api.PriceFieldValue.get']['count'] == 1 && $value['api.PriceFieldValue.get']['values'][0]['amount'] == 1
+        ) {
+          $priceField = $value;
+          break;
+        }
+      }
+      if (!$priceField) {
+        throw new CRM_Exception("Price Set for event $eventId should have exactly one text/numeric price field worth 1.00, but none was found; nothing to update.");
+      }
+    }
+
+    return $priceField;
+   }
 }
