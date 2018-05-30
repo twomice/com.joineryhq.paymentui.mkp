@@ -271,7 +271,7 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
       // create contribution
       $contributionCreate = civicrm_api3('Contribution', 'create', array(
         'financial_type_id' => $financialTypeId,
-        'total_amount' => 4.00,
+        'total_amount' => 0,
         'contact_id' => $contactId,
       ));
       $createdContributionId = CRM_Utils_Array::value('id', $contributionCreate);
