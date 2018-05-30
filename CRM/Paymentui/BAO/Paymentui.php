@@ -221,7 +221,6 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
   public static function updateParticipantSingleLineItemTotal($participantId, $amount) {
     $contributionId = self::getParticpantPaymentContributionId($participantId);
 
-
     $participant = self::getParticipant($participantId);
     $eventId = CRM_Utils_Array::value('event_id', $participant);
     $priceField = self::getSingleLineItemPriceFieldForEvent($eventId);
@@ -283,13 +282,17 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
           'participant_id' => $participantId,
           'contribution_id' => $createdContributionId,
         ));
+        // Call getFieldValue() with $force=TRUE (5th parameter), in order to
+        // force rebuilding of cached values for this participantPaymentID;
+        // apparently civicrm has by this time already performed this query, and
+        // will has cached the value internally; if we don't clear the cache,
+        // processes in CRM_Contribute_BAO_Contribution::getPaymentInfo(), which
+        // is called later, will see the cached (empty) value, instead of our
+        // newly created value.
+        CRM_Core_DAO::getFieldValue('CRM_Event_DAO_ParticipantPayment', $participantId, 'contribution_id', 'participant_id', TRUE);
 
-        $participantPaymentGet = civicrm_api3('ParticipantPayment', 'get', array(
-          'participant_id' => $participantId,
-          'contribution_id' => $createdContributionId,
-        ));
-
-
+        // If the participantPayment was created correctly, get set to return
+        // the created Contribution ID.
         if (CRM_Utils_Array::value('id', $participantPaymentCreate)) {
           $contributionId = $createdContributionId;
         }
