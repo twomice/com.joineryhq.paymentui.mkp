@@ -238,12 +238,27 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
 
     $partialPaymentInfo = $this->_participantInfo;
     //Process all the partial payments and update the records
-    process_partial_payments($paymentParams, $this->_participantInfo);
+    $paymentResponses = process_partial_payments($paymentParams, $this->_participantInfo);
+    foreach (array_keys($this->_participantInfo) as $participantId) {
+      $paymentResponse = CRM_Utils_Array::value($participantId, $paymentResponses);
+      if (CRM_Utils_Array::value('success', $paymentResponse)) {
+        //Define status message
+        $trxn = CRM_Utils_Array::value('trxn', $paymentResponse);
+        $statusMsg = ts('Payment of %1 was processed successfully for <em>%2</em>.', array(
+          '1' => CRM_Utils_Money::format($trxn->total_amount, $trxn->currency),
+          '2' => CRM_Utils_Array::value('event_name', $paymentResponse),
+        ));
+        $params = $paymentResponse + array(
+          'is_email_receipt' => '1',
+          'receipt_text' => '',
+          'MAX_FILE_SIZE' => '2097152',
+          'confirm_email_text' => '',
+        );
+        $sendReceipt = $this->emailReceipt($params);
+        CRM_Core_Session::setStatus($statusMsg, ts('Saved'), 'success');
+      }
+    }
     parent::postProcess();
-
-    //Define status message
-    $statusMsg = ts('The payment(s) have been processed successfully.');
-    CRM_Core_Session::setStatus($statusMsg, ts('Saved'), 'success');
 
     // Save billing details to new or existing billing address.
     $api_params = array(
@@ -288,6 +303,126 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
       }
     }
     return $elementNames;
+  }
+
+  /**
+   * Send an email receipt for the payment described in given params.
+   *
+   * @param array $params
+   *
+   * @return mixed
+   */
+  private function emailReceipt(&$params) {
+    $eventId = CRM_Core_DAO::getFieldValue('CRM_Event_DAO_Participant', CRM_Utils_Array::value('pid', $params), 'event_id', 'id');
+    $fromEmails = self::getEmails($eventId);
+
+    $returnProperties = array('fee_label', 'start_date', 'end_date', 'is_show_location', 'title');
+    CRM_Core_DAO::commonRetrieveAll('CRM_Event_DAO_Event', 'id', $eventId, $events, $returnProperties);
+    $event = $events[$eventId];
+
+    // Template needs 'component' to include event-related information.
+    $this->assign('component', 'event');
+
+    $this->assign('event', $event);
+    $isShowLocation = CRM_Utils_Array::value('is_show_location', $event);
+    $this->assign('isShowLocation', $isShowLocation);
+    if ($isShowLocation == 1) {
+      $locationParams = array(
+        'entity_id' => $eventId,
+        'entity_table' => 'civicrm_event',
+      );
+      $location = CRM_Core_BAO_Location::getValues($locationParams, TRUE);
+      $this->assign('location', $location);
+    }
+
+    // assign payment info here
+    $this->assign('isRefund', FALSE);
+    $trxn = CRM_Utils_Array::value('trxn', $params);
+    $balance = CRM_Utils_Array::value('balance', $params, 0) - $trxn->total_amount;
+    $this->assign('amountOwed', $balance);
+    // Contribution total amount.
+    $this->assign('totalAmount', CRM_Utils_Array::value('total_amount', $params));
+    // Transaction payment amount.
+    $this->assign('paymentAmount', $trxn->total_amount);
+    $this->assign('paymentsComplete', ($balance == 0) ? 1 : 0);
+
+    $this->assign('contactDisplayName', CRM_Utils_Array::value('contact_name', $params));
+
+    // assign trxn details
+    $this->assign('trxn_id', $trxn->trxn_id);
+    $this->assign('receive_date', $trxn->trxn_date);
+    if ($payment_instrument_id = $trxn->payment_instrument_id) {
+      $paymentInstrument = CRM_Contribute_PseudoConstant::paymentInstrument();
+      $this->assign('paidBy', CRM_Utils_Array::value($payment_instrument_id, $paymentInstrument));
+    }
+    $this->assign('checkNumber', $trxn->check_number);
+
+    $contactId = CRM_Utils_Array::value('cid', $params);
+
+    $sendTemplateParams = array(
+      'groupName' => 'msg_tpl_workflow_contribution',
+      'valueName' => 'payment_or_refund_notification',
+      'contactId' => $contactId,
+      'PDFFilename' => ts('notification') . '.pdf',
+    );
+
+    // try to send emails only if email id is present
+    // and the do-not-email option is not checked for that contact
+    $contact = civicrm_api3('contact', 'getSingle', array('id' => $contactId));
+    if (
+      $contactEmail = CRM_Utils_Array::value('email', $contact)
+      && !CRM_Utils_Array::value('do_not_email', $contact)
+    ) {
+      $sendTemplateParams['from'] = CRM_Utils_Array::value('from', $fromEmails);
+      $sendTemplateParams['toName'] = CRM_Utils_Array::value('display_name', $contact);
+      $sendTemplateParams['toEmail'] = CRM_Utils_Array::value('email', $contact);
+      $sendTemplateParams['cc'] = CRM_Utils_Array::value('cc', $fromEmails);
+      $sendTemplateParams['bcc'] = CRM_Utils_Array::value('bcc', $fromEmails);
+    }
+    list($mailSent, $subject, $message, $html) = CRM_Core_BAO_MessageTemplate::sendTemplate($sendTemplateParams);
+    return $mailSent;
+  }
+
+  /**
+   * Build list of email from/cc/bcc using the domain email id and the emails
+   * configured for the event
+   *
+   * @param int $eventId
+   *   The id of the event.
+   *
+   * @return array
+   *   an array of email ids
+   */
+  public static function getEmails($eventId = NULL) {
+    $emails = array();
+
+    // add all configured FROM email addresses
+    $domainFrom = CRM_Core_OptionGroup::values('from_email_address');
+    foreach (array_keys($domainFrom) as $k) {
+      $domainEmail = $domainFrom[$k];
+      $emails['from'] = $domainEmail;
+    }
+
+    if ($eventId) {
+      // add the emails configured for the event
+      $params = array('id' => $eventId);
+      $returnProperties = array('is_email_confirm', 'confirm_from_name', 'confirm_from_email', 'cc_confirm', 'bcc_confirm');
+      $eventEmail = array();
+
+      CRM_Core_DAO::commonRetrieve('CRM_Event_DAO_Event', $params, $eventEmail, $returnProperties);
+      if ($eventEmail['is_email_confirm']) {
+        if (
+          !empty($eventEmail['confirm_from_name']) &&
+          !empty($eventEmail['confirm_from_email'])
+        ) {
+          $eventEmailId = "{$eventEmail['confirm_from_name']} <{$eventEmail['confirm_from_email']}>";
+          $emails['from'] = $eventEmailId;
+        }
+        $emails['cc'] = CRM_Utils_Array::value('cc_confirm', $eventEmail);
+        $emails['bcc'] = CRM_Utils_Array::value('bcc_confirm', $eventEmail);
+      }
+    }
+    return $emails;
   }
 
 }
