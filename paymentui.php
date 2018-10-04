@@ -4,6 +4,38 @@ require_once 'paymentui.civix.php';
 use CRM_Paymentui_ExtensionUtil as E;
 
 /**
+ * Implements hook_civicrm_alterPaymentProcessorParams().
+ *
+ * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_alterPaymentProcessorParams
+ */
+function paymentui_civicrm_alterPaymentProcessorParams($paymentObj, &$rawParams, &$cookedParams) {
+  // Don't bother unless we're coming from our own PaymentUI page.
+  $paymentUiURL = CRM_Utils_System::url('civicrm/paymentui/add/payment', "reset=1", TRUE);
+  if (CRM_Utils_Array::value('entryURL', $rawParams) == $paymentUiURL) {
+    // Get event titles for any participations for which payments are submitted.
+    $paidParticipantIds = array();
+    foreach (CRM_Utils_Array::value('payment', $rawParams, array(0)) as $participantId => $amount) {
+      if ($amount > 0) {
+        $paidParticipantIds[] = $participantId;
+      }
+    }
+    $apiParams = array(
+      'id' => array('IN' => $paidParticipantIds),
+      'return' => "event_id",
+    );
+    $result = civicrm_api3('Participant', 'get', $apiParams);
+    $titles = CRM_Utils_Array::collect('event_title', CRM_Utils_Array::value('values', $result));
+    if (!empty($titles)) {
+      // Concatenate event titles into the 'desc' parameter sent to the payment processor.
+      // TODO: This works for paypal pro; add support for other processors?
+      $cookedParams['desc'] = ts('Partial payment for event(s): %1', array(
+        '1' => implode($titles, '; '),
+      ));
+    }
+  }
+}
+
+/**
  * Implements hook_civicrm_buildForm().
  *
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_buildForm
