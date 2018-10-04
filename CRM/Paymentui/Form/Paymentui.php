@@ -234,50 +234,59 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
     $payment = CRM_Core_Payment::singleton($this->_mode, $this->_paymentProcessor, $this);
 
     $result = $payment->doDirectPayment($paymentParams);
-    $CCFinancialTrxn = CRM_Paymentui_BAO_Paymentui::createFinancialTrxn($paymentParams);
+    if (is_a($result, 'CRM_Core_Error')) {
+      $statusMsg = ts('Payment of %1 failed. Error(s):<br />%2', array(
+        '1' => CRM_Utils_Money::format($totalAmount),
+        '2' => CRM_Core_Error::getMessages($result),
+      ));
+      CRM_Core_Session::setStatus($statusMsg, ts('Failed'), 'error');
+    }
+    else {
+      $CCFinancialTrxn = CRM_Paymentui_BAO_Paymentui::createFinancialTrxn($paymentParams);
 
-    $partialPaymentInfo = $this->_participantInfo;
-    //Process all the partial payments and update the records
-    $paymentResponses = process_partial_payments($paymentParams, $this->_participantInfo);
-    foreach (array_keys($this->_participantInfo) as $participantId) {
-      $paymentResponse = CRM_Utils_Array::value($participantId, $paymentResponses);
-      if (CRM_Utils_Array::value('success', $paymentResponse)) {
-        //Define status message
-        $trxn = CRM_Utils_Array::value('trxn', $paymentResponse);
-        $statusMsg = ts('Payment of %1 was processed successfully for <em>%2</em>.', array(
-          '1' => CRM_Utils_Money::format($trxn->total_amount, $trxn->currency),
-          '2' => CRM_Utils_Array::value('event_name', $paymentResponse),
-        ));
-        $params = $paymentResponse + array(
-          'is_email_receipt' => '1',
-          'receipt_text' => '',
-          'MAX_FILE_SIZE' => '2097152',
-          'confirm_email_text' => '',
-        );
-        $sendReceipt = $this->emailReceipt($params);
-        CRM_Core_Session::setStatus($statusMsg, ts('Saved'), 'success');
+      $partialPaymentInfo = $this->_participantInfo;
+      //Process all the partial payments and update the records
+      $paymentResponses = process_partial_payments($paymentParams, $this->_participantInfo);
+      foreach (array_keys($this->_participantInfo) as $participantId) {
+        $paymentResponse = CRM_Utils_Array::value($participantId, $paymentResponses);
+        if (CRM_Utils_Array::value('success', $paymentResponse)) {
+          //Define status message
+          $trxn = CRM_Utils_Array::value('trxn', $paymentResponse);
+          $statusMsg = ts('Payment of %1 was processed successfully for <em>%2</em>.', array(
+            '1' => CRM_Utils_Money::format($trxn->total_amount, $trxn->currency),
+            '2' => CRM_Utils_Array::value('event_name', $paymentResponse),
+          ));
+          $params = $paymentResponse + array(
+            'is_email_receipt' => '1',
+            'receipt_text' => '',
+            'MAX_FILE_SIZE' => '2097152',
+            'confirm_email_text' => '',
+          );
+          $sendReceipt = $this->emailReceipt($params);
+          CRM_Core_Session::setStatus($statusMsg, ts('Saved'), 'success');
+        }
       }
-    }
-    parent::postProcess();
+      parent::postProcess();
 
-    // Save billing details to new or existing billing address.
-    $api_params = array(
-      'street_address' => $this->_params['billing_street_address-5'],
-      'city' => $this->_params['billing_city-5'],
-      'state_province_id' => $this->_params['billing_state_province_id-5'],
-      'postal_code' => $this->_params['billing_postal_code-5'],
-      'country_id' => $this->_params['billing_country_id-5'],
-      'location_type_id' => "Billing",
-      'contact_id' => $this->_contactID,
-    );
-    $result = civicrm_api3('Address', 'get', array(
-      'location_type_id' => "Billing",
-      'contact_id' => $this->_contactID,
-    ));
-    if (!empty($result['values'])) {
-      $api_params['id'] = min(array_keys($result['values']));
+      // Save billing details to new or existing billing address.
+      $api_params = array(
+        'street_address' => $this->_params['billing_street_address-5'],
+        'city' => $this->_params['billing_city-5'],
+        'state_province_id' => $this->_params['billing_state_province_id-5'],
+        'postal_code' => $this->_params['billing_postal_code-5'],
+        'country_id' => $this->_params['billing_country_id-5'],
+        'location_type_id' => "Billing",
+        'contact_id' => $this->_contactID,
+      );
+      $result = civicrm_api3('Address', 'get', array(
+        'location_type_id' => "Billing",
+        'contact_id' => $this->_contactID,
+      ));
+      if (!empty($result['values'])) {
+        $api_params['id'] = min(array_keys($result['values']));
+      }
+      $result = civicrm_api3('Address', 'create', $api_params);
     }
-    $result = civicrm_api3('Address', 'create', $api_params);
 
     //Redirect to the same URL
     $url = CRM_Utils_System::url('civicrm/paymentui/add/payment', "reset=1");
