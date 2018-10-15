@@ -28,9 +28,11 @@ function paymentui_civicrm_alterPaymentProcessorParams($paymentObj, &$rawParams,
     if (!empty($titles)) {
       // Concatenate event titles into the 'desc' parameter sent to the payment processor.
       // TODO: This works for paypal pro; add support for other processors?
-      $cookedParams['desc'] = ts('Partial payment for event(s): %1', array(
+      $desc = ts('Partial payment for event(s): %1', array(
         '1' => implode($titles, '; '),
       ));
+      $cookedParams['desc'] = $desc;
+      $cookedParams['description'] = $desc;
     }
   }
 }
