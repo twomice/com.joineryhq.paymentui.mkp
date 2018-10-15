@@ -42,7 +42,10 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
 
     //Get participant info for the primary and related contacts
     $sql = "
-      SELECT p.id, p.contact_id, p.status_id, e.title, c.display_name, pp.contribution_id, e.id as event_id
+      SELECT
+        p.id, p.contact_id, p.status_id, e.title, c.display_name,
+        pp.contribution_id, e.id as event_id,
+        ifnull(end_date, start_date) > NOW() as is_future
       FROM
         civicrm_participant p
         INNER JOIN civicrm_contact c ON p.contact_id = c.id
@@ -52,7 +55,6 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
         p.contact_id IN (" . implode(',', $cid_placeholders) . ")
         AND (p.status_id NOT IN (" . implode(',', $status_placeholders) . "))
         AND p.is_test = 0
-        AND ifnull(end_date, start_date) > NOW()
     ";
 
     foreach ($paymentui_exclude_participant_role as $param) {
@@ -79,6 +81,12 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
         }
         //Get the payment details of all the participants
         $paymentDetails = CRM_Contribute_BAO_Contribution::getPaymentInfo($dao->id, 'event', FALSE, TRUE);
+
+        // If this event is both fully paid and in the past, skip it.
+        if ($paymentDetails['balance'] <= 0 && !$dao->is_future) {
+          continue;
+        }
+
         //Get display names of the participants and additional participants, if any
         $displayNames = self::getDisplayNames($dao->id, $dao->display_name);
 
