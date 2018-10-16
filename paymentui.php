@@ -10,8 +10,7 @@ use CRM_Paymentui_ExtensionUtil as E;
  */
 function paymentui_civicrm_alterPaymentProcessorParams($paymentObj, &$rawParams, &$cookedParams) {
   // Don't bother unless we're coming from our own PaymentUI page.
-  $paymentUiURL = CRM_Utils_System::url('civicrm/paymentui/add/payment', "reset=1", TRUE);
-  if (CRM_Utils_Array::value('entryURL', $rawParams) == $paymentUiURL) {
+  if (CRM_Utils_Array::value('isPaymentuiForm', $rawParams) == 1) {
     // Get event titles for any participations for which payments are submitted.
     $paidParticipantIds = array();
     foreach (CRM_Utils_Array::value('payment', $rawParams, array(0)) as $participantId => $amount) {

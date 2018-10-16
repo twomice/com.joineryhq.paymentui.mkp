@@ -125,6 +125,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
           'isDefault' => TRUE,
         ),
       ));
+      $this->addElement('hidden', 'isPaymentuiForm', 1);
 
       // export form elements
       $this->assign('elementNames', $this->getRenderableElementNames());
