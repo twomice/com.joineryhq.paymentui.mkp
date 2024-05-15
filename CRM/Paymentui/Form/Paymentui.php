@@ -5,14 +5,9 @@ require_once 'CRM/Core/Form.php';
 /**
  * Form controller class
  */
-class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
+class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_ContributionBase {
 
   static $extensionName = 'com.joineryhq.paymentui.mkp';
-  public $_params;
-  public $_amount;
-  public $_mode;
-  public $_contributeMode;
-  private $_contactID;
 
   /**
    * Function to set variables up before form is built
@@ -116,7 +111,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
           $element = & $this->add('text', "payment[$pid]", NULL, $payment_html_attributes, FALSE);
         }
       }
-      CRM_Contribute_Form_ContributionBase::assignToTemplate();
+      $this->assignToTemplate();
 
       $this->addButtons(array(
         array(
@@ -232,9 +227,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
 
     $paymentParams = $this->_params;
     CRM_Core_Payment_Form::mapParams($this->_bltID, $this->_params, $paymentParams, TRUE);
-    $payment = CRM_Core_Payment::singleton($this->_mode, $this->_paymentProcessor, $this);
-
-    $result = $payment->doDirectPayment($paymentParams);
+    $result = $this->_paymentProcessor['object']->doDirectPayment($paymentParams);
     if (is_a($result, 'CRM_Core_Error')) {
       $statusMsg = ts('Payment of %1 failed. Error(s):<br />%2', array(
         '1' => CRM_Utils_Money::format($totalAmount),
