@@ -249,7 +249,7 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
     $paidAmount = CRM_Utils_Array::value('paid', $paymentInfo);
 
     // Change the line item.
-    CRM_Event_BAO_Participant::changeFeeSelections($params, $participantId, $contributionId, $feeBlock, $lineItems, $paidAmount, $priceSetId);
+    CRM_Price_BAO_LineItem::changeFeeSelections($params, $participantId, 'participant', $contributionId, $feeBlock, $lineItems);
 
     // If we're here, we have to assume it's successful, especially because
     // CRM_Event_BAO_Participant::changeFeeSelections() returns nothing.
