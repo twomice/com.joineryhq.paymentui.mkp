@@ -109,8 +109,8 @@ function paymentui_civicrm_enable() {
 function paymentui_civicrm_permission(&$permissions) {
   $permissions += array(
     'paymentui_add_payments' => array(
-      ts('Submit Additional Payments', array('domain' => 'com.joineryhq.paymentui.mkp')),
-      ts('Allows for submitting additional payments against existing partially paid balances.', array('domain' => 'com.joineryhq.paymentui.mkp')),
+      'label' => ts('Submit Additional Payments', array('domain' => 'com.joineryhq.paymentui.mkp')),
+      'description' => ts('Allows for submitting additional payments against existing partially paid balances.', array('domain' => 'com.joineryhq.paymentui.mkp')),
     ),
   );
 }
