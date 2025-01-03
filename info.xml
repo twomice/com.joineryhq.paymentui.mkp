@@ -17,7 +17,7 @@
     <url desc="Support">https://github.com/twomice/com.joineryhq.paymentui.mkp/issues</url>
   </urls>
   <compatibility>
-    <ver>4.7</ver>
+    <ver>5.45</ver>
   </compatibility>
   <comments>
     Requires extension &lt;em&gt;BOT Partial Payment Extension (Joinery fork)&lt;/em&gt;;&lt;br&gt;
@@ -25,5 +25,17 @@
   </comments>
   <civix>
     <namespace>CRM/Paymentui</namespace>
+    <format>24.09.1</format>
   </civix>
+  <mixins>
+    <mixin>menu-xml@1.0.0</mixin>
+    <mixin>setting-php@1.0.0</mixin>
+    <mixin>smarty-v2@1.0.3</mixin>
+    <mixin>entity-types-php@2.0.0</mixin>
+  </mixins>
+  <classloader>
+    <psr0 prefix="CRM_" path="."/>
+    <psr4 prefix="Civi\" path="Civi"/>
+  </classloader>
+  <upgrader>CiviMix\Schema\Paymentui\AutomaticUpgrader</upgrader>
 </extension>
