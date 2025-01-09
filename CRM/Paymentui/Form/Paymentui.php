@@ -39,7 +39,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_ContributionBase 
     $payment_processor_id = $result['id'];
 
     if (!$payment_processor_id) {
-      CRM_Core_Error::fatal(ts('No default payment processor is available. Cannot continue.'));
+      throw new CRM_Core_Exception(ts('No default payment processor is available. Cannot continue.'));
     }
 
     //Set Payment processor to default
