@@ -31,17 +31,17 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_ContributionBase 
       'is_default' => 1,
       'is_test' => 0,
     ));
-    $this->payment_processor_id = $result['id'];
+    $payment_processor_id = $result['id'];
 
-    if (!$this->payment_processor_id) {
+    if (!$payment_processor_id) {
       CRM_Core_Error::fatal(ts('No default payment processor is available. Cannot continue.'));
     }
 
     //Set Payment processor to default
-    $this->_paymentProcessor = CRM_Financial_BAO_PaymentProcessor::getPayment($this->payment_processor_id, 'live');
+    $this->_paymentProcessor = CRM_Financial_BAO_PaymentProcessor::getPayment($payment_processor_id, 'live');
 
     $payment_processors = CRM_Financial_BAO_PaymentProcessor::getPaymentProcessors();
-    $processor = $payment_processors[$this->payment_processor_id];
+    $processor = $payment_processors[$payment_processor_id];
 
     CRM_Core_Payment_Form::buildPaymentForm($this, $processor, FALSE, FALSE);
     $this->assign_by_ref('paymentProcessor', $paymentProcessor);
