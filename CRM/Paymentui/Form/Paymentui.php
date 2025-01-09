@@ -7,6 +7,11 @@ require_once 'CRM/Core/Form.php';
  */
 class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_ContributionBase {
 
+  /**
+   * @var Array Participant info for each relevant payment
+   */
+  public $_participantInfo = [];
+
   static $extensionName = 'com.joineryhq.paymentui.mkp';
 
   /**
@@ -63,12 +68,12 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_ContributionBase 
 
     // set default country from config if no country set
     if (empty($this->_defaults["billing_country_id-{$this->_bltID}"])) {
-      $this->_defaults["billing_country_id-{$this->_bltID}"] = $config->defaultContactCountry;
+      $this->_defaults["billing_country_id-{$this->_bltID}"] = (\Civi::settings()->get('defaultContactCountry') ?: 1228);
     }
 
     // set default state/province from config if no state/province set
     if (empty($this->_defaults["billing_state_province_id-{$this->_bltID}"])) {
-      $this->_defaults["billing_state_province_id-{$this->_bltID}"] = $config->defaultContactStateProvince;
+      $this->_defaults["billing_state_province_id-{$this->_bltID}"] = \Civi::settings()->get('defaultContactStateProvince');
     }
 
     return $this->_defaults;
