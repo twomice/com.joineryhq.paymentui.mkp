@@ -272,13 +272,13 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
       //Process all the partial payments and update the records
       //Function defined in bot.partial.payment extension - payment.php
       $paymentResponses = process_partial_payments($paymentParams, $this->_participantInfo);
-      foreach (array_keys($this->_participantInfo) as $participantId) {
+      foreach ($this->_participantInfo as $participantId => $participantInfo) {
         $paymentResponse = CRM_Utils_Array::value($participantId, $paymentResponses);
         if (CRM_Utils_Array::value('success', $paymentResponse)) {
           //Define status message
           $trxn = CRM_Utils_Array::value('trxn', $paymentResponse);
           $statusMsg = ts('Payment of %1 was processed successfully for <em>%2</em>.', array(
-            '1' => CRM_Utils_Money::format($trxn->total_amount, $trxn->currency),
+            '1' => CRM_Utils_Money::format($paymentResponse['payment']['total_amount'], $paymentResponse['payment']['currency']),
             '2' => CRM_Utils_Array::value('event_name', $paymentResponse),
           ));
           $params = $paymentResponse + array(
@@ -371,25 +371,25 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
 
     // assign payment info here
     $this->assign('isRefund', FALSE);
-    $trxn = CRM_Utils_Array::value('trxn', $params);
-    $balance = CRM_Utils_Array::value('balance', $params, 0) - $trxn->total_amount;
+    $payment = CRM_Utils_Array::value('payment', $params);
+    $balance = CRM_Utils_Array::value('balance', $params, 0) - $payment['total_amount'];
     $this->assign('amountOwed', $balance);
     // Contribution total amount.
     $this->assign('totalAmount', CRM_Utils_Array::value('total_amount', $params));
     // Transaction payment amount.
-    $this->assign('paymentAmount', $trxn->total_amount);
+    $this->assign('paymentAmount', $payment['total_amount']);
     $this->assign('paymentsComplete', ($balance == 0) ? 1 : 0);
 
     $this->assign('contactDisplayName', CRM_Utils_Array::value('contact_name', $params));
 
     // assign trxn details
-    $this->assign('trxn_id', $trxn->trxn_id);
-    $this->assign('receive_date', $trxn->trxn_date);
-    if ($payment_instrument_id = $trxn->payment_instrument_id) {
+    $this->assign('trxn_id', $payment['trxn_id']);
+    $this->assign('receive_date', $payment['trxn_date']);
+    if ($payment_instrument_id = $payment['payment_instrument_id']) {
       $paymentInstrument = CRM_Contribute_PseudoConstant::paymentInstrument();
       $this->assign('paidBy', CRM_Utils_Array::value($payment_instrument_id, $paymentInstrument));
     }
-    $this->assign('checkNumber', $trxn->check_number);
+    $this->assign('checkNumber', $payment['check_number']);
 
     $contactId = CRM_Utils_Array::value('cid', $params);
 
@@ -398,6 +398,17 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
       'valueName' => 'payment_or_refund_notification',
       'contactId' => $contactId,
       'PDFFilename' => ts('notification') . '.pdf',
+      // 'modelProps' are important for sending relevant Entity IDs to the
+      // 'payment_or_refund_notification' message template; without these (or
+      // at least, without _some_ of them), that message template won't have
+      // enough info to print all of its useful information.
+      'modelProps' => array_filter([
+        'contributionID' => $params['contribution_id'],
+        'contactID' => $params['cid'],
+        'financialTrxnID' => $payment['id'],
+        'eventID' => $eventId,
+        'participantID' => CRM_Utils_Array::value('pid', $params),
+      ]),
     );
 
     // try to send emails only if email id is present
