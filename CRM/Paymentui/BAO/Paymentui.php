@@ -216,11 +216,11 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
    * of 1, update the amount of that field to the given amount.
    *
    * @param Int $participantId
-   *  CiviCRM Participant ID (e.g., civicrm_participant.id)
+   *   CiviCRM Participant ID (e.g., civicrm_participant.id)
    * @param Float $amount
-   *  Decimal number indicating the total amount in dollars.
+   *   Decimal number indicating the total amount in dollars.
    * @return boolean
-   *  TRUE on success, otherwise FALSE.
+   *   TRUE on success, otherwise FALSE.
    * @throws CRM_Exception
    */
   public static function updateParticipantSingleLineItemTotal($participantId, $amount) {
@@ -242,7 +242,7 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
     return TRUE;
   }
 
-  static function getParticipant($participantId) {
+  public static function getParticipant($participantId) {
     static $participant;
     if (!isset($participant)) {
       $participant = civicrm_api3('participant', 'getSingle', array(
@@ -253,7 +253,7 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
     return $participant;
   }
 
-  static function getParticpantPaymentContributionId($participantId) {
+  public static function getParticpantPaymentContributionId($participantId) {
     $contributionId = CRM_Core_DAO::getFieldValue('CRM_Event_DAO_ParticipantPayment', $participantId, 'contribution_id', 'participant_id');
     if (!$contributionId) {
       $participant = self::getParticipant($participantId);
@@ -295,7 +295,7 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
     return $contributionId;
   }
 
-  static function getSingleLineItemPriceFieldForEvent($eventId) {
+  public static function getSingleLineItemPriceFieldForEvent($eventId) {
     static $priceField;
 
     if (!isset($priceField)) {
@@ -344,5 +344,6 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
     }
 
     return $priceField;
-   }
+  }
+
 }

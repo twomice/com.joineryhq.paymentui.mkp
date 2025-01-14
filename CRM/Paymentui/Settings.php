@@ -5,6 +5,7 @@
  *
  */
 class CRM_Paymentui_Settings {
+
   public static function getEventSettings($eventId) {
     $settingName = "event_settings_{$eventId}";
     $result = civicrm_api3('OptionValue', 'get', array(
