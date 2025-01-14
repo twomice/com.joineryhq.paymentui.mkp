@@ -6,8 +6,7 @@
  * icon. So hide it.
  */
 a#paymentui-button-show-payable span.icon,
-a#paymentui-button-show-all span.icon
-{
+a#paymentui-button-show-all span.icon {
   display: none;
 }
 

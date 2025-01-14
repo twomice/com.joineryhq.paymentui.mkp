@@ -11,14 +11,12 @@ require_once 'CRM/Core/Form.php';
  */
 class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
 
-  static $settingFilter = array('group' => 'paymentui');
-  static $extensionName = 'com.joineryhq.paymentui.mkp';
+  public static $settingFilter = array('group' => 'paymentui');
+  public static $extensionName = 'com.joineryhq.paymentui.mkp';
   private $_submittedValues = array();
   private $_settings = array();
 
-  public function __construct(
-  $state = NULL, $action = CRM_Core_Action::NONE, $method = 'post', $name = NULL
-  ) {
+  public function __construct($state = NULL, $action = CRM_Core_Action::NONE, $method = 'post', $name = NULL) {
 
     $this->setSettings();
 
@@ -34,25 +32,25 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
         switch ($setting['html_type']) {
           case 'Select':
             $this->add(
-              $setting['html_type'], // field type
-              $setting['name'], // field name
-              $setting['title'], // field label
+              $setting['html_type'],
+              $setting['name'],
+              $setting['title'],
               $this->getSettingOptions($setting), NULL, $setting['html_attributes']
             );
             break;
 
           case 'CheckBox':
             $this->addCheckBox(
-              $setting['name'], // field name
-              $setting['title'], // field label
+              $setting['name'],
+              $setting['title'],
               array_flip($this->getSettingOptions($setting))
             );
             break;
 
           case 'Radio':
             $this->addRadio(
-              $setting['name'], // field name
-              $setting['title'], // field label
+              $setting['name'],
+              $setting['title'],
               $this->getSettingOptions($setting)
             );
             break;

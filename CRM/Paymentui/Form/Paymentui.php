@@ -10,13 +10,23 @@ require_once 'CRM/Core/Form.php';
 class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
 
   /**
-   * @var Array Participant info for each relevant payment
+   * @var array
+   * Participant info for each relevant payment
    */
   public $_participantInfo = [];
 
-  public $_paymentProcessor;
+  /**
+   * @var int
+   * ID of the payment processor used in this form.
+   */
   public $payment_processor_id;
-  
+
+  /**
+   * @var array
+   * Properties for the payment processor used in this form.
+   */
+  public $_paymentProcessor;
+
   /**
    * Function to set variables up before form is built
    *
@@ -24,12 +34,12 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
    * @access public
    */
   public function preProcess() {
-	$this->_paymentProcessor = array('billing_mode' => 1);
-	$locationTypes = CRM_Core_PseudoConstant::get('CRM_Core_DAO_Address', 'location_type_id', array(), 'validate');
-	$this->_bltID = array_search('Billing', $locationTypes);
-	$this->set('bltID', $this->_bltID);
-	$this->assign('bltID', $this->_bltID);
-	$this->_fields = array();
+    $this->_paymentProcessor = array('billing_mode' => 1);
+    $locationTypes = CRM_Core_PseudoConstant::get('CRM_Core_DAO_Address', 'location_type_id', array(), 'validate');
+    $this->_bltID = array_search('Billing', $locationTypes);
+    $this->set('bltID', $this->_bltID);
+    $this->assign('bltID', $this->_bltID);
+    $this->_fields = array();
 
     // check if the user is registered and we have a contact ID
     $this->_contactID = $this->getContactID();
@@ -60,7 +70,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
     }
     $this->_paymentProcessor = CRM_Financial_BAO_PaymentProcessor::getPayment($this->payment_processor_id, 'live');
 
-  	CRM_Core_Payment_Form::setPaymentFieldsByProcessor($this, $this->_paymentProcessor);
+    CRM_Core_Payment_Form::setPaymentFieldsByProcessor($this, $this->_paymentProcessor);
     $this->assign_by_ref('paymentProcessor', $paymentProcessor);
     $this->assign('hidePayPalExpress', FALSE);
   }
@@ -116,9 +126,9 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
       $this->assign('columnHeaders', $columnHeaders);
 
       $this->assign('participantInfo', $this->_participantInfo);
-    	$totalAmount = 0;
+      $totalAmount = 0;
       foreach ($this->_participantInfo as $pid => $pInfo) {
-  			$totalAmount += $pInfo['total_amount'];
+        $totalAmount += $pInfo['total_amount'];
         if ($pInfo['balance']) {
           $payment_html_attributes = array(
             'class' => 'paymentui-payment-amount',
@@ -127,12 +137,10 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
           $element = & $this->add('text', "payment[$pid]", NULL, $payment_html_attributes, FALSE);
         }
       }
-      $element =& $this->add( 'text', "totalAmount", $totalAmount,	false);
+      $element = & $this->add('text', "totalAmount", $totalAmount, FALSE);
       $this->assign('totalAmount', $totalAmount);
-      
-      CRM_Core_Payment_Form::buildPaymentForm($this, $this->_paymentProcessor, FALSE, FALSE);	
-      
-//      $this->assignToTemplate();
+
+      CRM_Core_Payment_Form::buildPaymentForm($this, $this->_paymentProcessor, FALSE, FALSE);
 
       $this->addButtons(array(
         array(
@@ -242,14 +250,14 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
     $this->_params['month'] = CRM_Core_Payment_Form::getCreditCardExpirationMonth($this->_params);
     $this->_params['ip_address'] = CRM_Utils_System::ipAddress();
     $this->_params['amount'] = $totalAmount;
-  	$this->_params['amount_level']   = $params['amount_level'];
+    $this->_params['amount_level'] = $params['amount_level'];
     $this->_params['currencyID'] = $config->defaultCurrency;
     $this->_params['payment_action'] = 'Sale';
     $this->_params['invoiceID'] = md5(uniqid(rand(), TRUE));
 
     $paymentParams = $this->_params;
-   	$payment = Civi\Payment\System::singleton()->getByProcessor($this->_paymentProcessor);
-    $result  = $payment->doPayment($paymentParams);
+    $payment = Civi\Payment\System::singleton()->getByProcessor($this->_paymentProcessor);
+    $result = $payment->doPayment($paymentParams);
     if (is_a($result, 'CRM_Core_Error')) {
       $statusMsg = ts('Payment of %1 failed. Error(s):<br />%2', array(
         '1' => CRM_Utils_Money::format($totalAmount),
@@ -449,4 +457,5 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
     }
     return $emails;
   }
+
 }
