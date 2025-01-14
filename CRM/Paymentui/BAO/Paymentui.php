@@ -58,16 +58,13 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
     ";
 
     foreach ($paymentui_exclude_participant_role as $param) {
-      // Not exactly equal to $i;
-      $sql .= "AND p.role_id != %{$i} ";
+      // Ensure $param doesn't appear in delimited-multi-value string `role_id`:
+      // (We use concat to wrap role_id in VALUE_SEPARATOR so that LIKE '%...%'
+      // works correctly, regardless of whether $param appears first, last, alone,
+      // or in the middle of a delimited string.)
+      $sql .= "AND concat('" . CRM_core_dao::VALUE_SEPARATOR . "', p.role_id, '" . CRM_core_dao::VALUE_SEPARATOR . "') NOT LIKE '%" . CRM_core_dao::VALUE_SEPARATOR . $param . CRM_core_dao::VALUE_SEPARATOR . "%'";
       $query_params[$i] = array($param, 'Int');
       $i++;
-      // Not in the middle of a multi-value string.
-      $sql .= "AND p.role_id NOT LIKE '%" . CRM_core_dao::VALUE_SEPARATOR . (int) $param . CRM_core_dao::VALUE_SEPARATOR . "%'";
-      // Not at the start of a multi-value string.
-      $sql .= "AND p.role_id NOT LIKE '%" . CRM_core_dao::VALUE_SEPARATOR . (int) $param . "'";
-      // Not at the end of a multi-value string.
-      $sql .= "AND p.role_id NOT LIKE '" . (int) $param . CRM_core_dao::VALUE_SEPARATOR . "%'\n";
     }
     $dao = CRM_Core_DAO::executeQuery($sql, $query_params);
 

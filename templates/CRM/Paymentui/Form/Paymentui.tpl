@@ -45,7 +45,7 @@
 
   <div id="paymentui-billing-form">
     {* FIELD EXAMPLE: OPTION 1 (AUTOMATIC LAYOUT) *}
-    {include file="CRM/Core/BillingBlock.tpl" context="front-end" }
+    {include file="CRM/Core/BillingBlock.tpl" context="front-end"}
     {if $form.payment_processor.label}
       {* PP selection only works with JS enabled, so we hide it initially *}
       <fieldset class="crm-group payment_options-group" style="display:none;">
@@ -71,13 +71,13 @@
       </fieldset>
       {/if}
 
-      <div id="billing-payment-block">
-        {* If we have a payment processor, load it - otherwise it happens via ajax *}
-        {if $ppType}
-          {include file="CRM/Contribute/Form/Contribution/Main.tpl" snippet=4}
-        {/if}
-      </div>
-      {include file="CRM/common/paymentBlock.tpl"}
+  <div id="billing-payment-block">
+    {* If we have a payment processor, load it - otherwise it happens via ajax *}
+    {if $ppType}
+      {include file="CRM/Contribute/Form/Contribution/Main.tpl" snippet=4}
+    {/if}
+  </div>
+  {include file="CRM/common/paymentBlock.tpl"}
 
     {* FOOTER *}
     <div class="crm-submit-buttons">

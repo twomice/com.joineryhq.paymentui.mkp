@@ -1,19 +1,22 @@
 <?php
 
+use CRM_Paymentui_ExtensionUtil as E;
+
 require_once 'CRM/Core/Form.php';
 
 /**
  * Form controller class
  */
-class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_ContributionBase {
+class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
 
   /**
    * @var Array Participant info for each relevant payment
    */
   public $_participantInfo = [];
 
-  static $extensionName = 'com.joineryhq.paymentui.mkp';
-
+  public $_paymentProcessor;
+  public $payment_processor_id;
+  
   /**
    * Function to set variables up before form is built
    *
@@ -21,34 +24,43 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_ContributionBase 
    * @access public
    */
   public function preProcess() {
+	$this->_paymentProcessor = array('billing_mode' => 1);
+	$locationTypes = CRM_Core_PseudoConstant::get('CRM_Core_DAO_Address', 'location_type_id', array(), 'validate');
+	$this->_bltID = array_search('Billing', $locationTypes);
+	$this->set('bltID', $this->_bltID);
+	$this->assign('bltID', $this->_bltID);
+	$this->_fields = array();
+
     // check if the user is registered and we have a contact ID
     $this->_contactID = $this->getContactID();
 
-    // Determine the correct payment processor.
-    $this->_paymentProcessor = array('billing_mode' => 1);
-    $locationTypes = CRM_Core_PseudoConstant::get('CRM_Core_DAO_Address', 'location_type_id', array(), 'validate');
-    $this->_bltID = array_search('Billing', $locationTypes);
-    $this->set('bltID', $this->_bltID);
-    $this->assign('bltID', $this->_bltID);
-    $this->_fields = array();
-
-    $result = civicrm_api3('PaymentProcessor', 'get', array(
-      'is_default' => 1,
-      'is_test' => 0,
-    ));
-    $payment_processor_id = $result['id'];
-
-    if (!$payment_processor_id) {
-      throw new CRM_Core_Exception(ts('No default payment processor is available. Cannot continue.'));
+    //Gets the live default payment processor, if not found displays an error
+    try {
+      $ppResult = civicrm_api3('PaymentProcessor', 'get', array(
+        'sequential' => 1,
+        'return' => "id,name,payment_processor_type_id",
+        'is_default' => 1,
+        'is_active' => 1,
+        'is_test' => 0,
+      ));
+    }
+    catch (CiviCRM_API3_Exception $e) {
+      $error = $e->getMessage();
+      CRM_Core_Error::fatal("Payment Processor is not set for processing the payment. Please contact the system administrator");
     }
 
-    //Set Payment processor to default
-    $this->_paymentProcessor = CRM_Financial_BAO_PaymentProcessor::getPayment($payment_processor_id, 'live');
+    if (!$ppResult['error']) {
+      $this->payment_processor_id = $ppResult['id'];
+    }
+    else {
+      //CRM_Core_Error::fatal("Payment Processor is not set for processing the payment. Please contact the system administrator");
+      $message = ts('Payment Processor is not set for processing the payment. Please contact the system administrator.');
+      CRM_Utils_System::setUFMessage($message);
+      return;
+    }
+    $this->_paymentProcessor = CRM_Financial_BAO_PaymentProcessor::getPayment($this->payment_processor_id, 'live');
 
-    $payment_processors = CRM_Financial_BAO_PaymentProcessor::getPaymentProcessors();
-    $processor = $payment_processors[$payment_processor_id];
-
-    CRM_Core_Payment_Form::buildPaymentForm($this, $processor, FALSE, FALSE);
+  	CRM_Core_Payment_Form::setPaymentFieldsByProcessor($this, $this->_paymentProcessor);
     $this->assign_by_ref('paymentProcessor', $paymentProcessor);
     $this->assign('hidePayPalExpress', FALSE);
   }
@@ -57,8 +69,6 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_ContributionBase 
    * Set the default values.
    *
    * @return Array
-   */
-  /**
    */
   public function setDefaultValues() {
 
@@ -78,7 +88,6 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_ContributionBase 
 
     return $this->_defaults;
   }
-
 
   /**
    * Function to build the form
@@ -107,7 +116,9 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_ContributionBase 
       $this->assign('columnHeaders', $columnHeaders);
 
       $this->assign('participantInfo', $this->_participantInfo);
+    	$totalAmount = 0;
       foreach ($this->_participantInfo as $pid => $pInfo) {
+  			$totalAmount += $pInfo['total_amount'];
         if ($pInfo['balance']) {
           $payment_html_attributes = array(
             'class' => 'paymentui-payment-amount',
@@ -116,7 +127,12 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_ContributionBase 
           $element = & $this->add('text', "payment[$pid]", NULL, $payment_html_attributes, FALSE);
         }
       }
-      $this->assignToTemplate();
+      $element =& $this->add( 'text', "totalAmount", $totalAmount,	false);
+      $this->assign('totalAmount', $totalAmount);
+      
+      CRM_Core_Payment_Form::buildPaymentForm($this, $this->_paymentProcessor, FALSE, FALSE);	
+      
+//      $this->assignToTemplate();
 
       $this->addButtons(array(
         array(
@@ -134,15 +150,15 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_ContributionBase 
     }
 
     // Include extra CSS styles.
-    $style_path = CRM_Core_Resources::singleton()->getPath(self::$extensionName, 'css/extension.css');
+    $style_path = CRM_Core_Resources::singleton()->getPath(E::LONG_NAME, 'css/extension.css');
     if ($style_path) {
-      CRM_Core_Resources::singleton()->addStyleFile(self::$extensionName, 'css/extension.css');
+      CRM_Core_Resources::singleton()->addStyleFile(E::LONG_NAME, 'css/extension.css');
     }
 
     // Include extra JavaScript.
-    $style_path = CRM_Core_Resources::singleton()->getPath(self::$extensionName, 'js/paymentui_add_payment.js');
+    $style_path = CRM_Core_Resources::singleton()->getPath(E::LONG_NAME, 'js/paymentui_add_payment.js');
     if ($style_path) {
-      CRM_Core_Resources::singleton()->addScriptFile(self::$extensionName, 'js/paymentui_add_payment.js');
+      CRM_Core_Resources::singleton()->addScriptFile(E::LONG_NAME, 'js/paymentui_add_payment.js');
     }
   }
 
@@ -226,13 +242,14 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_ContributionBase 
     $this->_params['month'] = CRM_Core_Payment_Form::getCreditCardExpirationMonth($this->_params);
     $this->_params['ip_address'] = CRM_Utils_System::ipAddress();
     $this->_params['amount'] = $totalAmount;
+  	$this->_params['amount_level']   = $params['amount_level'];
     $this->_params['currencyID'] = $config->defaultCurrency;
     $this->_params['payment_action'] = 'Sale';
     $this->_params['invoiceID'] = md5(uniqid(rand(), TRUE));
 
     $paymentParams = $this->_params;
-    CRM_Core_Payment_Form::mapParams($this->_bltID, $this->_params, $paymentParams, TRUE);
-    $result = $this->_paymentProcessor['object']->doDirectPayment($paymentParams);
+   	$payment = Civi\Payment\System::singleton()->getByProcessor($this->_paymentProcessor);
+    $result  = $payment->doPayment($paymentParams);
     if (is_a($result, 'CRM_Core_Error')) {
       $statusMsg = ts('Payment of %1 failed. Error(s):<br />%2', array(
         '1' => CRM_Utils_Money::format($totalAmount),
@@ -245,6 +262,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_ContributionBase 
 
       $partialPaymentInfo = $this->_participantInfo;
       //Process all the partial payments and update the records
+      //Function defined in bot.partial.payment extension - payment.php
       $paymentResponses = process_partial_payments($paymentParams, $this->_participantInfo);
       foreach (array_keys($this->_participantInfo) as $participantId) {
         $paymentResponse = CRM_Utils_Array::value($participantId, $paymentResponses);
@@ -378,8 +396,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_ContributionBase 
     // and the do-not-email option is not checked for that contact
     $contact = civicrm_api3('contact', 'getSingle', array('id' => $contactId));
     if (
-      $contactEmail = CRM_Utils_Array::value('email', $contact)
-      && !CRM_Utils_Array::value('do_not_email', $contact)
+      $contactEmail = CRM_Utils_Array::value('email', $contact) && !CRM_Utils_Array::value('do_not_email', $contact)
     ) {
       $sendTemplateParams['from'] = CRM_Utils_Array::value('from', $fromEmails);
       $sendTemplateParams['toName'] = CRM_Utils_Array::value('display_name', $contact);
@@ -432,5 +449,4 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_ContributionBase 
     }
     return $emails;
   }
-
 }
