@@ -228,28 +228,17 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
    */
   public static function updateParticipantSingleLineItemTotal($participantId, $amount) {
     $contributionId = self::getParticpantPaymentContributionId($participantId);
-
     $participant = self::getParticipant($participantId);
     $eventId = CRM_Utils_Array::value('event_id', $participant);
     $priceField = self::getSingleLineItemPriceFieldForEvent($eventId);
     $priceFieldId = CRM_Utils_Array::value('id', $priceField);
-    $priceSetId = CRM_Utils_Array::value('price_set_id', $priceField);
 
     // Build variables needed for changing the line item amount.
     $params = CRM_Event_Form_EventFees::setDefaultPriceSet($participantId, $eventId, FALSE);
     $params['price_' . $priceFieldId] = $amount;
 
-    $priceSets = CRM_Price_BAO_PriceSet::getSetDetail($priceSetId, FALSE, FALSE);
-    $priceSet = CRM_Utils_Array::value($priceSetId, $priceSets);
-    $feeBlock = CRM_Utils_Array::value('fields', $priceSet);
-
-    $lineItems = CRM_Price_BAO_LineItem::getLineItems($participantId, 'participant');
-
-    $paymentInfo = CRM_Contribute_BAO_Contribution::getPaymentInfo($participantId, 'event');
-    $paidAmount = CRM_Utils_Array::value('paid', $paymentInfo);
-
     // Change the line item.
-    CRM_Price_BAO_LineItem::changeFeeSelections($params, $participantId, 'participant', $contributionId, $feeBlock, $lineItems);
+    CRM_Price_BAO_LineItem::changeFeeSelections($params, $participantId, 'participant', $contributionId);
 
     // If we're here, we have to assume it's successful, especially because
     // CRM_Event_BAO_Participant::changeFeeSelections() returns nothing.
