@@ -327,14 +327,15 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
         throw new CRM_Exception('Could not find a price set for event ' . $eventId);
       }
 
-      $result = civicrm_api3('PriceField', 'get', array(
-        'sequential' => 1,
-        'price_set_id' => $priceSetId,
-        'api.PriceFieldValue.get' => array(),
-      ));
+      $priceFieldGet = \Civi\Api4\PriceField::get(TRUE)
+        ->addWhere('price_set_id', '=', $priceSetId)
+        ->addChain('priceFieldValue', \Civi\Api4\PriceFieldValue::get(TRUE)
+          ->addWhere('price_field_id', '=', '$id')
+        )
+        ->execute();
       $nonZeroPriceOptionCount = 0;
-      foreach ($result['values'] as $value) {
-        foreach ($value['api.PriceFieldValue.get']['values'] as $priceFieldValue) {
+      foreach ($priceFieldGet as $priceFieldGet) {
+        foreach ($priceFieldGet['priceFieldValue'] as $priceFieldValue) {
           if ($priceFieldValue['amount'] != 0) {
             $nonZeroPriceOptionCount++;
           }
@@ -343,15 +344,17 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
           }
         }
         if (
-          $value['html_type'] == 'Text' && $value['is_enter_qty'] == '1' && $value['api.PriceFieldValue.get']['count'] == 1 && $value['api.PriceFieldValue.get']['values'][0]['amount'] == 1
+          $priceFieldGet['html_type'] == 'Text' && $priceFieldGet['is_enter_qty'] == '1' && (count($priceFieldGet['priceFieldValue']) == 1) && $priceFieldGet['priceFieldValue'][0]['amount'] == 1
         ) {
-          $priceField = $value;
+          $priceField = $priceFieldGet;
           break;
         }
       }
+
       if (!$priceField) {
         throw new CRM_Exception("Price Set for event $eventId should have exactly one text/numeric price field worth 1.00, but none was found; nothing to update.");
       }
+
     }
 
     return $priceField;
