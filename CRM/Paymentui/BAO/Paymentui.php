@@ -215,6 +215,8 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
    * with a non-zero value, and that field is a text/numeric field with a value
    * of 1, update the amount of that field to the given amount.
    *
+   * RESERVED: This utility method is used outside by code outside of this extension.
+   *
    * @param Int $participantId
    *   CiviCRM Participant ID (e.g., civicrm_participant.id)
    * @param Float $amount
