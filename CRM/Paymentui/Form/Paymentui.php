@@ -271,7 +271,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
       $partialPaymentInfo = $this->_participantInfo;
       //Process all the partial payments and update the records
       //Function defined in bot.partial.payment extension - payment.php
-      $paymentResponses = process_partial_payments($paymentParams, $this->_participantInfo);
+      $paymentResponses = CRM_Paymentui_Util::process_partial_payments($paymentParams, $this->_participantInfo);
       foreach ($this->_participantInfo as $participantId => $participantInfo) {
         $paymentResponse = CRM_Utils_Array::value($participantId, $paymentResponses);
         if (CRM_Utils_Array::value('success', $paymentResponse)) {
