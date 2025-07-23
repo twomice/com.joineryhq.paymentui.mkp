@@ -14,7 +14,9 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     $this->_contactID = $this->getContactID();    
     $participantInfo = CRM_Paymentui_BAO_Paymentui::getParticipantInfo($this->_contactID);
     $this->_participantInfo = $participantInfo;
-    
+    if (!$this->getContributionPageID()) {
+      return;
+    }
     return parent::preProcess();
   }
   
@@ -25,8 +27,14 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
    * @access public
    */
   public function buildQuickForm() {
+    if (!$this->getContributionPageID()) {
+      CRM_Core_Session::setStatus('Site administrator attention required: No contribution page has been configured for the Partial Payments User Interface.', ts('Configuration incomplete'), 'error');
+      $this->assign('config_incomplete', TRUE);
+      return;
+    }
     parent::buildQuickForm();
     
+    // Set a special css class on the form if civicrm 'debug' is enable.
     if (\Civi::settings()->get('debug_enabled')) {
       $class = $this->getAttribute('class') . ' paymentui-is-debug';
       $this->setAttribute('class', $class);
@@ -38,7 +46,9 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
       return;
     }
 
+    // Pass some useful values to javascript.
     $jsVars = [
+      // "Other" field is the target for our on-page calculated total amount.
       'priceFieldOtherId' => $this->_getPriceFieldOtherID(),
     ];
     CRM_Core_Resources::singleton()->addVars(E::SHORT_NAME, $jsVars);
@@ -63,8 +73,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
         }
       }
 
-
-      // export form elements
+      // Define form validation.
       $this->addFormRule(array('CRM_Paymentui_Form_Paymentui', 'formRule'), $this);
     }
 
@@ -96,8 +105,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
    */
   public function getContributionPageID(): int {
     if (!$this->_id) {
-      // FIXME: This should be configurable, not hardcoded.
-      $this->_id = 9;
+      $this->_id = \Civi::settings()->get('paymentui_contribution_page_id');
     }
     return $this->_id;
   }  
@@ -105,7 +113,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
    * Process confirm function and pass browser to the thank you page.
    */
   protected function skipToThankYouPage() {
-    // redirect to my page.
+    // Redirect to our own page (we don't use thank-you or confirmation.
     CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/paymentui/add/payment', "reset=1", TRUE, NULL, FALSE));
   }
 

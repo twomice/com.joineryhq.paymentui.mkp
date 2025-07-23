@@ -1,5 +1,6 @@
 <?php
 
+use CRM_Paymentui_ExtensionUtil as E;
 require_once 'CRM/Core/Form.php';
 
 /**
@@ -191,6 +192,23 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
     }
     asort($options);
     return $options;
+  }
+
+  public static function getContributionPageOptions() {
+    $baseOptions = [
+      '0' => '- ' . E::ts('Select') . ' -',
+    ];
+    $result = civicrm_api3('ContributionPage', 'get', array(
+      'is_active' => true,
+      'options' => array('limit' => 0),
+    ));
+    $pageOptions = [];
+    foreach ($result['values'] as $id => $value) {
+      $pageOptions[$id] = $value['title'];
+    }
+    asort($pageOptions);
+    
+    return ($baseOptions + $pageOptions);
   }
 
   public function getSettingOptions($setting) {
