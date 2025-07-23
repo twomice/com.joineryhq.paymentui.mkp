@@ -59,13 +59,8 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
         }
       }
 
-//      CRM_Core_Payment_Form::buildPaymentForm($this, $this->_paymentProcessor, FALSE, FALSE);
-
-//      $this->addElement('hidden', 'isPaymentuiForm', 1);
 
       // export form elements
-//      $this->assign('elementNames', $this->getRenderableElementNames());
-//      parent::buildQuickForm();
       $this->addFormRule(array('CRM_Paymentui_Form_Paymentui', 'formRule'), $this);
     }
 
@@ -97,6 +92,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
    */
   public function getContributionPageID(): int {
     if (!$this->_id) {
+      // FIXME: This should be configurable, not hardcoded.
       $this->_id = 9;
     }
     return $this->_id;
@@ -473,6 +469,43 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     return NULL;
   }
   
+  /**
+   * global form rule
+   *
+   * @param array $fields the input form values
+   * @param array $files the uploaded files if any
+   * @param $self
+   *
+   * @internal param array $options additional user data
+   *
+   * @return true if no errors, else array of errors
+   * @access public
+   * @static
+   */
+  public static function formRule($fields, $files, $self) {
+    $errors = [];
+
+    //Validate the amount: should not be more than balance and should be numeric
+    $total = 0;
+    foreach ($fields['payment'] as $pid => $amount) {
+      if ($amount) {
+        if ($self->_participantInfo[$pid]['balance'] < $amount) {
+          $errors['payment[' . $pid . ']'] = ts('Amount can not exceed the balance amount.');
+        }
+        if (!is_numeric($amount)) {
+          $errors['payment[' . $pid . ']'] = ts('Please enter a valid amount.');
+        }
+        else {
+          $total += $amount;
+        }
+      }
+    }
+    if (!$total) {
+      $errors["payment[{$pid}]"] = ts('Please enter an amount for at least one event.');
+    }
+
+    return $errors;
+  }
 }
 
 
