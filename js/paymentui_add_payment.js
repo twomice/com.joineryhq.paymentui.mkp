@@ -2,11 +2,17 @@
  * On-page event handling for paymentui/add/payment
  */
 CRM.$(function($){
+  // Move our custom content to a place just above the price set.
+  CRM.$('#paymentui-container').insertBefore('#priceset-div');
+
+  // Lock all inputs int the priceset.
+  CRM.$('div#priceset-div input').attr('readonly', 'readonly');
+  
   // Add click handlers for "show all" and "show payable" buttons.
   $('a#paymentui-button-show-payable').click(paymentui_add_payment.show_payable);
   $('a#paymentui-button-show-all').click(paymentui_add_payment.show_all);
 
-// Add change handlers for amount fields.
+  // Add change handlers for amount fields.
   $('input.paymentui-payment-amount').change(paymentui_add_payment.paymentuiAmountChange);
 
   // Start by showing all events.

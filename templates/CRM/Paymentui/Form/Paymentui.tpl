@@ -1,6 +1,6 @@
 {if $participantInfo}
   {* HEADER *}
-  <div class="form-item">
+  <div class="form-item" id="paymentui-container">
     <fieldset>
     <legend>{ts}{$displayName}{/ts}</legend>
     <div>

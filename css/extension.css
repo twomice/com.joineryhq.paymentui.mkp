@@ -15,6 +15,19 @@ p#empty-events-list-notice {
   padding-top: 1em;
 }
 
+/* Hide "not you?" message on thsi form 
+ */
 div.crm-not-you-message {
   display: none;
 }
+
+/* Hide (or obscure, if debug) native contribution fields on this form.
+ */
+ form.CRM_Paymentui_Form_Paymentui div#priceset-div {
+   display: none;
+ }
+ form.CRM_Paymentui_Form_Paymentui.paymentui-is-debug div#priceset-div {
+   display: block;
+   opacity: .5;
+ }
+ 

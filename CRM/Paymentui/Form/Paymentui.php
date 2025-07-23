@@ -27,6 +27,10 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
   public function buildQuickForm() {
     parent::buildQuickForm();
     
+    if (\Civi::settings()->get('debug_enabled')) {
+      $class = $this->getAttribute('class') . ' paymentui-is-debug';
+      $this->setAttribute('class', $class);
+    }
     //Get contact name of the logged in user
     if (!$this->_contactID) {
       $message = ts('You are not authorized to view this page.');
