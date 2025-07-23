@@ -14,3 +14,7 @@ p#empty-events-list-notice {
   clear: both;
   padding-top: 1em;
 }
+
+div.crm-not-you-message {
+  display: none;
+}

@@ -6,6 +6,9 @@ CRM.$(function($){
   $('a#paymentui-button-show-payable').click(paymentui_add_payment.show_payable);
   $('a#paymentui-button-show-all').click(paymentui_add_payment.show_all);
 
+// Add change handlers for amount fields.
+  $('input.paymentui-payment-amount').change(paymentui_add_payment.paymentuiAmountChange);
+
   // Start by showing all events.
   paymentui_add_payment.show_all();
 });
@@ -52,5 +55,30 @@ var paymentui_add_payment = {
       CRM.$('div#paymentui-billing-form').hide();
       CRM.$('p#empty-events-list-notice').show();
     }
-  }
+  },
+  
+  'paymentuiAmountChange': function paymentuiAmountChange() {
+    var total = 0.00;
+  
+    var thisVal = CRM.$(this).val();
+  
+    if (!CRM.$.isNumeric(thisVal)) {
+      CRM.alert("Please enter a numeric value.", 'Not a number', 'error');
+      CRM.$(this).focus();
+      CRM.$('#total').html('[Error]');
+    }
+    else {
+      CRM.$.each(CRM.$( "input.paymentui-payment-amount" ), function() {
+        var amt = CRM.$(this).val();
+        console.log('amt', amt)
+        if ( CRM.$.isNumeric(amt) ) {
+          total = parseFloat(total)+parseFloat(amt);
+        }
+      });
+      total = Math.round(total*100, 2)/100;
+      total = CRM.formatMoney(total, true);
+      CRM.$('#total').html(total);
+    }
+    CRM.$('#price_' + CRM.vars.paymentui.priceFieldOtherId).val(total).keyup();
+  }  
 };

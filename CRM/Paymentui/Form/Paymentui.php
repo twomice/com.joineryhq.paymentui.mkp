@@ -7,7 +7,476 @@ require_once 'CRM/Core/Form.php';
 /**
  * Form controller class
  */
-class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
+class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main {
+  private $_participantInfo = [];
+  
+  function preProcess() {
+    $this->_contactID = $this->getContactID();    
+    $participantInfo = CRM_Paymentui_BAO_Paymentui::getParticipantInfo($this->_contactID);
+    $this->_participantInfo = $participantInfo;
+    
+    return parent::preProcess();
+  }
+  
+  /**
+   * Function to build the form
+   *
+   * @return void
+   * @access public
+   */
+  public function buildQuickForm() {
+    parent::buildQuickForm();
+    
+    //Get contact name of the logged in user
+    if (!$this->_contactID) {
+      $message = ts('You are not authorized to view this page.');
+      CRM_Utils_System::setUFMessage($message);
+      return;
+    }
+
+    $jsVars = [
+      'priceFieldOtherId' => $this->_getPriceFieldOtherID(),
+    ];
+    CRM_Core_Resources::singleton()->addVars(E::SHORT_NAME, $jsVars);
+    
+    //Get event names for which logged in user and the related contacts are registered
+    if (!empty($this->_participantInfo)) {
+      $this->assign('participantInfo', $this->_participantInfo);
+      $this->assign('displayName', CRM_Contact_BAO_Contact::displayName($this->_contactID));
+
+      //Set column headers for the table
+      $columnHeaders = array('Event', 'Registrant', 'Cost', 'Paid to Date', 'Amount Unpaid', 'Make Payment');
+      $this->assign('columnHeaders', $columnHeaders);
+
+      $totalAmount = 0;
+      foreach ($this->_participantInfo as $pid => $pInfo) {
+        $totalAmount += $pInfo['total_amount'];
+        if ($pInfo['balance']) {
+          $payment_html_attributes = array(
+            'class' => 'paymentui-payment-amount',
+          );
+          $element = & $this->add('text', "payment[$pid]", NULL, $payment_html_attributes, FALSE);
+        }
+      }
+
+//      CRM_Core_Payment_Form::buildPaymentForm($this, $this->_paymentProcessor, FALSE, FALSE);
+
+//      $this->addElement('hidden', 'isPaymentuiForm', 1);
+
+      // export form elements
+//      $this->assign('elementNames', $this->getRenderableElementNames());
+//      parent::buildQuickForm();
+      $this->addFormRule(array('CRM_Paymentui_Form_Paymentui', 'formRule'), $this);
+    }
+
+    // Include extra CSS styles.
+    $style_path = CRM_Core_Resources::singleton()->getPath(E::LONG_NAME, 'css/extension.css');
+    if ($style_path) {
+      CRM_Core_Resources::singleton()->addStyleFile(E::LONG_NAME, 'css/extension.css');
+    }
+
+    // Include extra JavaScript.
+    $style_path = CRM_Core_Resources::singleton()->getPath(E::LONG_NAME, 'js/paymentui_add_payment.js');
+    if ($style_path) {
+      CRM_Core_Resources::singleton()->addScriptFile(E::LONG_NAME, 'js/paymentui_add_payment.js');
+    }
+  }
+
+  public function getContactID() {
+    return CRM_Core_Session::singleton()->getLoggedInContactID();
+  }
+
+  /**
+   * Get id of contribution page being acted on.
+   *
+   * @api This function will not change in a minor release and is supported for
+   * use outside of core. This annotation / external support for properties
+   * is only given where there is specific test cover.
+   *
+   * @return int
+   */
+  public function getContributionPageID(): int {
+    if (!$this->_id) {
+      $this->_id = 9;
+    }
+    return $this->_id;
+  }  
+  /**
+   * Process confirm function and pass browser to the thank you page.
+   */
+  protected function skipToThankYouPage() {
+    // redirect to my page.
+    CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/paymentui/add/payment', "reset=1", TRUE, NULL, FALSE));
+  }
+
+
+  /**
+   * Function to process the form
+   *
+   * @access public
+   *
+   * @return void
+   */
+  public function postProcess() {    
+    
+    $this->_params = $this->controller->exportValues($this->_name);
+    
+    $totalAmount = $this->getMainContributionAmount();
+
+    // FIXME: Need to think about how this is configured. How much is configured in the contribution page, and how much
+    //   in the extension? What abourt receipts? Pay later (no)?  Hide some configs on contribution page config, because irrelevant (price sets; force enable 'other amount')
+    
+
+    //Calculate total amount paid and individual amount for each contribution
+    foreach ($this->_params['payment'] as $pid => $pVal) {
+      $this->_participantInfo[$pid]['partial_payment_pay'] = $pVal;
+    }
+
+    // FIXME: Confirm this section is not needed.
+    // Building params for CC processing
+    $this->_params["state_province-{$this->_bltID}"] = $this->_params["billing_state_province-{$this->_bltID}"] = CRM_Core_PseudoConstant::stateProvinceAbbreviation($this->_params["billing_state_province_id-{$this->_bltID}"]);
+    $this->_params["country-{$this->_bltID}"] = $this->_params["billing_country-{$this->_bltID}"] = CRM_Core_PseudoConstant::countryIsoCode($this->_params["billing_country_id-{$this->_bltID}"]);
+    $this->_params['year'] = CRM_Core_Payment_Form::getCreditCardExpirationYear($this->_params);
+    $this->_params['month'] = CRM_Core_Payment_Form::getCreditCardExpirationMonth($this->_params);
+    $this->_params['ip_address'] = CRM_Utils_System::ipAddress();
+    $this->_params['amount'] = $totalAmount;
+//    $this->_params['amount_level'] = $params['amount_level'];
+//    $this->_params['currencyID'] = $config->defaultCurrency;
+    $this->_params['payment_action'] = 'Sale';
+    $this->_params['invoiceID'] = md5(uniqid(rand(), TRUE));
+    
+    $paymentParams = $this->_params;
+    $paymentParams['currency'] = $this->getCurrency();
+    $paymentParams['contactID'] = $this->_contactID;
+    $paymentProcessor = Civi\Payment\System::singleton()->getById($this->_paymentProcessorID);
+    $doPaymentResult = $paymentProcessor->doPayment($paymentParams);
+    $paymentParams['trxn_id'] = $doPaymentResult['trxn_id'];
+
+    if (is_a($doPaymentResult, 'CRM_Core_Error')) {
+      $statusMsg = ts('Payment of %1 failed. Error(s):<br />%2', array(
+        '1' => CRM_Utils_Money::format($totalAmount),
+        '2' => CRM_Core_Error::getMessages($doPaymentResult),
+      ));
+      CRM_Core_Session::setStatus($statusMsg, ts('Failed'), 'error');
+    }
+    else {
+      $CCFinancialTrxn = CRM_Paymentui_BAO_Paymentui::createFinancialTrxn($paymentParams);
+
+      //Process all the partial payments and update the records
+      //Function defined in bot.partial.payment extension - payment.php
+      $paymentResponses = CRM_Paymentui_Util::process_partial_payments($paymentParams, $this->_participantInfo, $doPaymentResult);
+      foreach ($this->_participantInfo as $participantId => $participantInfo) {
+        $paymentResponse = CRM_Utils_Array::value($participantId, $paymentResponses);
+        if (CRM_Utils_Array::value('success', $paymentResponse)) {
+//          $trxn = CRM_Utils_Array::value('trxn', $paymentResponse);
+          // Send email receipt.
+          $params = $paymentResponse + array(
+            'is_email_receipt' => '1',
+            'receipt_text' => '',
+            'MAX_FILE_SIZE' => '2097152',
+            'confirm_email_text' => '',
+          );
+          $sendReceipt = $this->emailReceipt($params);
+
+          //Define status message
+          $statusMsg = ts('Payment of %1 was processed successfully for %2 at <em>%3</em>.', array(
+            '1' => CRM_Utils_Money::format($paymentResponse['payment']['total_amount'], $paymentResponse['payment']['currency']),
+            '2' => CRM_Utils_Array::value('contact_name', $participantInfo),
+            '3' => CRM_Utils_Array::value('event_name', $paymentResponse),
+          ));
+          CRM_Core_Session::setStatus($statusMsg, 'Success:', 'success');
+        }
+      }
+
+      
+/*      
+      // Save billing details to new or existing billing address.
+      $api_params = array(
+        'street_address' => $this->_params['billing_street_address-5'],
+        'city' => $this->_params['billing_city-5'],
+        'state_province_id' => $this->_params['billing_state_province_id-5'],
+        'postal_code' => $this->_params['billing_postal_code-5'],
+        'country_id' => $this->_params['billing_country_id-5'],
+        'location_type_id' => "Billing",
+        'contact_id' => $this->_contactID,
+      );
+      $result = civicrm_api3('Address', 'get', array(
+        'location_type_id' => "Billing",
+        'contact_id' => $this->_contactID,
+      ));
+      if (!empty($result['values'])) {
+        $api_params['id'] = min(array_keys($result['values']));
+      }
+      $result = civicrm_api3('Address', 'create', $api_params);
+ */
+    }    
+    
+    $this->skipToThankYouPage();
+    return;
+    
+    
+    $totalAmount = 0;
+    $config = CRM_Core_Config::singleton();
+
+    //Calculate total amount paid and individual amount for each contribution
+    foreach ($this->_params['payment'] as $pid => $pVal) {
+      $totalAmount += $pVal;
+      $this->_participantInfo[$pid]['partial_payment_pay'] = $pVal;
+    }
+    //Building params for CC processing
+    $this->_params["state_province-{$this->_bltID}"] = $this->_params["billing_state_province-{$this->_bltID}"] = CRM_Core_PseudoConstant::stateProvinceAbbreviation($this->_params["billing_state_province_id-{$this->_bltID}"]);
+    $this->_params["country-{$this->_bltID}"] = $this->_params["billing_country-{$this->_bltID}"] = CRM_Core_PseudoConstant::countryIsoCode($this->_params["billing_country_id-{$this->_bltID}"]);
+    $this->_params['year'] = CRM_Core_Payment_Form::getCreditCardExpirationYear($this->_params);
+    $this->_params['month'] = CRM_Core_Payment_Form::getCreditCardExpirationMonth($this->_params);
+    $this->_params['ip_address'] = CRM_Utils_System::ipAddress();
+    $this->_params['amount'] = $totalAmount;
+    $this->_params['amount_level'] = $params['amount_level'];
+    $this->_params['currencyID'] = $config->defaultCurrency;
+    $this->_params['payment_action'] = 'Sale';
+    $this->_params['invoiceID'] = md5(uniqid(rand(), TRUE));
+
+    $paymentParams = $this->_params;
+    $payment = Civi\Payment\System::singleton()->getByProcessor($this->_paymentProcessor);
+    $doPaymentResult = $payment->doPayment($paymentParams);
+    if (is_a($doPaymentResult, 'CRM_Core_Error')) {
+      $statusMsg = ts('Payment of %1 failed. Error(s):<br />%2', array(
+        '1' => CRM_Utils_Money::format($totalAmount),
+        '2' => CRM_Core_Error::getMessages($doPaymentResult),
+      ));
+      CRM_Core_Session::setStatus($statusMsg, ts('Failed'), 'error');
+    }
+    else {
+      $CCFinancialTrxn = CRM_Paymentui_BAO_Paymentui::createFinancialTrxn($paymentParams);
+
+      $partialPaymentInfo = $this->_participantInfo;
+      //Process all the partial payments and update the records
+      //Function defined in bot.partial.payment extension - payment.php
+      $paymentResponses = CRM_Paymentui_Util::process_partial_payments($paymentParams, $this->_participantInfo);
+      foreach ($this->_participantInfo as $participantId => $participantInfo) {
+        $paymentResponse = CRM_Utils_Array::value($participantId, $paymentResponses);
+        if (CRM_Utils_Array::value('success', $paymentResponse)) {
+          //Define status message
+          $trxn = CRM_Utils_Array::value('trxn', $paymentResponse);
+          $statusMsg = ts('Payment of %1 was processed successfully for <em>%2</em>.', array(
+            '1' => CRM_Utils_Money::format($paymentResponse['payment']['total_amount'], $paymentResponse['payment']['currency']),
+            '2' => CRM_Utils_Array::value('event_name', $paymentResponse),
+          ));
+          $params = $paymentResponse + array(
+            'is_email_receipt' => '1',
+            'receipt_text' => '',
+            'MAX_FILE_SIZE' => '2097152',
+            'confirm_email_text' => '',
+          );
+          $sendReceipt = $this->emailReceipt($params);
+          CRM_Core_Session::setStatus($statusMsg, ts('Saved'), 'success');
+        }
+      }
+      parent::postProcess();
+
+      // Save billing details to new or existing billing address.
+      $api_params = array(
+        'street_address' => $this->_params['billing_street_address-5'],
+        'city' => $this->_params['billing_city-5'],
+        'state_province_id' => $this->_params['billing_state_province_id-5'],
+        'postal_code' => $this->_params['billing_postal_code-5'],
+        'country_id' => $this->_params['billing_country_id-5'],
+        'location_type_id' => "Billing",
+        'contact_id' => $this->_contactID,
+      );
+      $doPaymentResult = civicrm_api3('Address', 'get', array(
+        'location_type_id' => "Billing",
+        'contact_id' => $this->_contactID,
+      ));
+      if (!empty($doPaymentResult['values'])) {
+        $api_params['id'] = min(array_keys($doPaymentResult['values']));
+      }
+      $doPaymentResult = civicrm_api3('Address', 'create', $api_params);
+    }
+
+    //Redirect to the same URL
+    $url = CRM_Utils_System::url('civicrm/paymentui/add/payment', "reset=1");
+    $session = CRM_Core_Session::singleton();
+    CRM_Utils_System::redirect($url);
+  }
+  
+  /**
+   * Send an email receipt for the payment described in given params.
+   *
+   * @param array $params
+   *
+   * @return mixed
+   */
+  private function emailReceipt(&$params) {
+    $eventId = CRM_Core_DAO::getFieldValue('CRM_Event_DAO_Participant', CRM_Utils_Array::value('pid', $params), 'event_id', 'id');
+    $fromEmails = self::getEmails($eventId);
+
+    $returnProperties = array('fee_label', 'start_date', 'end_date', 'is_show_location', 'title');
+    CRM_Core_DAO::commonRetrieveAll('CRM_Event_DAO_Event', 'id', $eventId, $events, $returnProperties);
+    $event = $events[$eventId];
+
+    // Template needs 'component' to include event-related information.
+    $this->assign('component', 'event');
+
+    $this->assign('event', $event);
+    $isShowLocation = CRM_Utils_Array::value('is_show_location', $event);
+    $this->assign('isShowLocation', $isShowLocation);
+    if ($isShowLocation == 1) {
+      $locationParams = array(
+        'entity_id' => $eventId,
+        'entity_table' => 'civicrm_event',
+      );
+      $location = CRM_Core_BAO_Location::getValues($locationParams, TRUE);
+      $this->assign('location', $location);
+    }
+
+    // assign payment info here
+    $this->assign('isRefund', FALSE);
+    $payment = CRM_Utils_Array::value('payment', $params);
+    $balance = CRM_Utils_Array::value('balance', $params, 0) - $payment['total_amount'];
+    $this->assign('amountOwed', $balance);
+    // Contribution total amount.
+    $this->assign('totalAmount', CRM_Utils_Array::value('total_amount', $params));
+    // Transaction payment amount.
+    $this->assign('paymentAmount', $payment['total_amount']);
+    $this->assign('paymentsComplete', ($balance == 0) ? 1 : 0);
+
+    $this->assign('contactDisplayName', CRM_Utils_Array::value('contact_name', $params));
+
+    // assign trxn details
+    $this->assign('trxn_id', $payment['trxn_id']);
+    $this->assign('receive_date', $payment['trxn_date']);
+    if ($payment_instrument_id = $payment['payment_instrument_id']) {
+      $paymentInstrument = CRM_Contribute_PseudoConstant::paymentInstrument();
+      $this->assign('paidBy', CRM_Utils_Array::value($payment_instrument_id, $paymentInstrument));
+    }
+    $this->assign('checkNumber', $payment['check_number']);
+
+    $contactId = CRM_Utils_Array::value('cid', $params);
+
+    $sendTemplateParams = array(
+      'groupName' => 'msg_tpl_workflow_contribution',
+      'valueName' => 'payment_or_refund_notification',
+      'contactId' => $contactId,
+      'PDFFilename' => ts('notification') . '.pdf',
+      // 'modelProps' are important for sending relevant Entity IDs to the
+      // 'payment_or_refund_notification' message template; without these (or
+      // at least, without _some_ of them), that message template won't have
+      // enough info to print all of its useful information.
+      'modelProps' => array_filter([
+        'contributionID' => $params['contribution_id'],
+        'contactID' => $params['cid'],
+        'financialTrxnID' => $payment['id'],
+        'eventID' => $eventId,
+        'participantID' => CRM_Utils_Array::value('pid', $params),
+      ]),
+    );
+
+    // try to send emails only if email id is present
+    // and the do-not-email option is not checked for that contact
+    $contact = civicrm_api3('contact', 'getSingle', array('id' => $contactId));
+    if (
+      $contactEmail = CRM_Utils_Array::value('email', $contact) && !CRM_Utils_Array::value('do_not_email', $contact)
+    ) {
+      $sendTemplateParams['from'] = CRM_Utils_Array::value('from', $fromEmails);
+      $sendTemplateParams['toName'] = CRM_Utils_Array::value('display_name', $contact);
+      $sendTemplateParams['toEmail'] = CRM_Utils_Array::value('email', $contact);
+      $sendTemplateParams['cc'] = CRM_Utils_Array::value('cc', $fromEmails);
+      $sendTemplateParams['bcc'] = CRM_Utils_Array::value('bcc', $fromEmails);
+    }
+    list($mailSent, $subject, $message, $html) = CRM_Core_BAO_MessageTemplate::sendTemplate($sendTemplateParams);
+    return $mailSent;
+  }
+  
+  /**
+   * Build list of email from/cc/bcc using the domain email id and the emails
+   * configured for the event
+   *
+   * @param int $eventId
+   *   The id of the event.
+   *
+   * @return array
+   *   an array of email ids
+   */
+  public static function getEmails($eventId = NULL) {
+    $emails = array();
+
+    // add all configured FROM email addresses
+    $domainFrom = CRM_Core_OptionGroup::values('from_email_address');
+    foreach (array_keys($domainFrom) as $k) {
+      $domainEmail = $domainFrom[$k];
+      $emails['from'] = $domainEmail;
+    }
+
+    if ($eventId) {
+      // add the emails configured for the event
+      $params = array('id' => $eventId);
+      $returnProperties = array('is_email_confirm', 'confirm_from_name', 'confirm_from_email', 'cc_confirm', 'bcc_confirm');
+      $eventEmail = array();
+
+      CRM_Core_DAO::commonRetrieve('CRM_Event_DAO_Event', $params, $eventEmail, $returnProperties);
+      if ($eventEmail['is_email_confirm']) {
+        if (
+          !empty($eventEmail['confirm_from_name']) &&
+          !empty($eventEmail['confirm_from_email'])
+        ) {
+          $eventEmailId = "{$eventEmail['confirm_from_name']} <{$eventEmail['confirm_from_email']}>";
+          $emails['from'] = $eventEmailId;
+        }
+        $emails['cc'] = CRM_Utils_Array::value('cc_confirm', $eventEmail);
+        $emails['bcc'] = CRM_Utils_Array::value('bcc_confirm', $eventEmail);
+      }
+    }
+    return $emails;
+  }
+
+  /**
+   * Get the fields/elements defined in this form.
+   *
+   * @return array (string)
+   */
+  private function getRenderableElementNames() {
+    // The _elements list includes some items which should not be
+    // auto-rendered in the loop -- such as "qfKey" and "buttons".  These
+    // items don't have labels.  We'll identify renderable by filtering on
+    // the 'label'.
+    $elementNames = array();
+    foreach ($this->_elements as $element) {
+      $label = $element->getLabel();
+      if (!empty($label)) {
+        $elementNames[] = $element->getName();
+      }
+    }
+    return $elementNames;
+  }
+  
+
+  /**
+   * Get the ID of the other amount field if the form is configured to offer it.
+   *
+   * The other amount field is an alternative to the configured radio options,
+   * specific to this form.
+   * 
+   * Copied from private method CRM_Contribute_Form_Contribution_Main::getPriceFieldOtherID(),
+   * in civicrm 5.81.0
+   *
+   * @return int|null
+   */
+  private function _getPriceFieldOtherID(): ?int {
+    if (!$this->isQuickConfig()) {
+      return NULL;
+    }
+    foreach ($this->order->getPriceFieldsMetadata() as $field) {
+      if ($field['name'] === 'other_amount') {
+        return (int) $field['id'];
+      }
+    }
+    return NULL;
+  }
+  
+}
+
+
+class foobar {
 
   /**
    * @var array
@@ -227,99 +696,6 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
   }
 
   /**
-   * Function to process the form
-   *
-   * @access public
-   *
-   * @return void
-   */
-  public function postProcess() {
-    $this->_params = $this->controller->exportValues($this->_name);
-    $totalAmount = 0;
-    $config = CRM_Core_Config::singleton();
-
-    //Calculate total amount paid and individual amount for each contribution
-    foreach ($this->_params['payment'] as $pid => $pVal) {
-      $totalAmount += $pVal;
-      $this->_participantInfo[$pid]['partial_payment_pay'] = $pVal;
-    }
-    //Building params for CC processing
-    $this->_params["state_province-{$this->_bltID}"] = $this->_params["billing_state_province-{$this->_bltID}"] = CRM_Core_PseudoConstant::stateProvinceAbbreviation($this->_params["billing_state_province_id-{$this->_bltID}"]);
-    $this->_params["country-{$this->_bltID}"] = $this->_params["billing_country-{$this->_bltID}"] = CRM_Core_PseudoConstant::countryIsoCode($this->_params["billing_country_id-{$this->_bltID}"]);
-    $this->_params['year'] = CRM_Core_Payment_Form::getCreditCardExpirationYear($this->_params);
-    $this->_params['month'] = CRM_Core_Payment_Form::getCreditCardExpirationMonth($this->_params);
-    $this->_params['ip_address'] = CRM_Utils_System::ipAddress();
-    $this->_params['amount'] = $totalAmount;
-    $this->_params['amount_level'] = $params['amount_level'];
-    $this->_params['currencyID'] = $config->defaultCurrency;
-    $this->_params['payment_action'] = 'Sale';
-    $this->_params['invoiceID'] = md5(uniqid(rand(), TRUE));
-
-    $paymentParams = $this->_params;
-    $payment = Civi\Payment\System::singleton()->getByProcessor($this->_paymentProcessor);
-    $result = $payment->doPayment($paymentParams);
-    if (is_a($result, 'CRM_Core_Error')) {
-      $statusMsg = ts('Payment of %1 failed. Error(s):<br />%2', array(
-        '1' => CRM_Utils_Money::format($totalAmount),
-        '2' => CRM_Core_Error::getMessages($result),
-      ));
-      CRM_Core_Session::setStatus($statusMsg, ts('Failed'), 'error');
-    }
-    else {
-      $CCFinancialTrxn = CRM_Paymentui_BAO_Paymentui::createFinancialTrxn($paymentParams);
-
-      $partialPaymentInfo = $this->_participantInfo;
-      //Process all the partial payments and update the records
-      //Function defined in bot.partial.payment extension - payment.php
-      $paymentResponses = CRM_Paymentui_Util::process_partial_payments($paymentParams, $this->_participantInfo);
-      foreach ($this->_participantInfo as $participantId => $participantInfo) {
-        $paymentResponse = CRM_Utils_Array::value($participantId, $paymentResponses);
-        if (CRM_Utils_Array::value('success', $paymentResponse)) {
-          //Define status message
-          $trxn = CRM_Utils_Array::value('trxn', $paymentResponse);
-          $statusMsg = ts('Payment of %1 was processed successfully for <em>%2</em>.', array(
-            '1' => CRM_Utils_Money::format($paymentResponse['payment']['total_amount'], $paymentResponse['payment']['currency']),
-            '2' => CRM_Utils_Array::value('event_name', $paymentResponse),
-          ));
-          $params = $paymentResponse + array(
-            'is_email_receipt' => '1',
-            'receipt_text' => '',
-            'MAX_FILE_SIZE' => '2097152',
-            'confirm_email_text' => '',
-          );
-          $sendReceipt = $this->emailReceipt($params);
-          CRM_Core_Session::setStatus($statusMsg, ts('Saved'), 'success');
-        }
-      }
-      parent::postProcess();
-
-      // Save billing details to new or existing billing address.
-      $api_params = array(
-        'street_address' => $this->_params['billing_street_address-5'],
-        'city' => $this->_params['billing_city-5'],
-        'state_province_id' => $this->_params['billing_state_province_id-5'],
-        'postal_code' => $this->_params['billing_postal_code-5'],
-        'country_id' => $this->_params['billing_country_id-5'],
-        'location_type_id' => "Billing",
-        'contact_id' => $this->_contactID,
-      );
-      $result = civicrm_api3('Address', 'get', array(
-        'location_type_id' => "Billing",
-        'contact_id' => $this->_contactID,
-      ));
-      if (!empty($result['values'])) {
-        $api_params['id'] = min(array_keys($result['values']));
-      }
-      $result = civicrm_api3('Address', 'create', $api_params);
-    }
-
-    //Redirect to the same URL
-    $url = CRM_Utils_System::url('civicrm/paymentui/add/payment', "reset=1");
-    $session = CRM_Core_Session::singleton();
-    CRM_Utils_System::redirect($url);
-  }
-
-  /**
    * Get the fields/elements defined in this form.
    *
    * @return array (string)
@@ -339,134 +715,5 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Core_Form {
     return $elementNames;
   }
 
-  /**
-   * Send an email receipt for the payment described in given params.
-   *
-   * @param array $params
-   *
-   * @return mixed
-   */
-  private function emailReceipt(&$params) {
-    $eventId = CRM_Core_DAO::getFieldValue('CRM_Event_DAO_Participant', CRM_Utils_Array::value('pid', $params), 'event_id', 'id');
-    $fromEmails = self::getEmails($eventId);
-
-    $returnProperties = array('fee_label', 'start_date', 'end_date', 'is_show_location', 'title');
-    CRM_Core_DAO::commonRetrieveAll('CRM_Event_DAO_Event', 'id', $eventId, $events, $returnProperties);
-    $event = $events[$eventId];
-
-    // Template needs 'component' to include event-related information.
-    $this->assign('component', 'event');
-
-    $this->assign('event', $event);
-    $isShowLocation = CRM_Utils_Array::value('is_show_location', $event);
-    $this->assign('isShowLocation', $isShowLocation);
-    if ($isShowLocation == 1) {
-      $locationParams = array(
-        'entity_id' => $eventId,
-        'entity_table' => 'civicrm_event',
-      );
-      $location = CRM_Core_BAO_Location::getValues($locationParams, TRUE);
-      $this->assign('location', $location);
-    }
-
-    // assign payment info here
-    $this->assign('isRefund', FALSE);
-    $payment = CRM_Utils_Array::value('payment', $params);
-    $balance = CRM_Utils_Array::value('balance', $params, 0) - $payment['total_amount'];
-    $this->assign('amountOwed', $balance);
-    // Contribution total amount.
-    $this->assign('totalAmount', CRM_Utils_Array::value('total_amount', $params));
-    // Transaction payment amount.
-    $this->assign('paymentAmount', $payment['total_amount']);
-    $this->assign('paymentsComplete', ($balance == 0) ? 1 : 0);
-
-    $this->assign('contactDisplayName', CRM_Utils_Array::value('contact_name', $params));
-
-    // assign trxn details
-    $this->assign('trxn_id', $payment['trxn_id']);
-    $this->assign('receive_date', $payment['trxn_date']);
-    if ($payment_instrument_id = $payment['payment_instrument_id']) {
-      $paymentInstrument = CRM_Contribute_PseudoConstant::paymentInstrument();
-      $this->assign('paidBy', CRM_Utils_Array::value($payment_instrument_id, $paymentInstrument));
-    }
-    $this->assign('checkNumber', $payment['check_number']);
-
-    $contactId = CRM_Utils_Array::value('cid', $params);
-
-    $sendTemplateParams = array(
-      'groupName' => 'msg_tpl_workflow_contribution',
-      'valueName' => 'payment_or_refund_notification',
-      'contactId' => $contactId,
-      'PDFFilename' => ts('notification') . '.pdf',
-      // 'modelProps' are important for sending relevant Entity IDs to the
-      // 'payment_or_refund_notification' message template; without these (or
-      // at least, without _some_ of them), that message template won't have
-      // enough info to print all of its useful information.
-      'modelProps' => array_filter([
-        'contributionID' => $params['contribution_id'],
-        'contactID' => $params['cid'],
-        'financialTrxnID' => $payment['id'],
-        'eventID' => $eventId,
-        'participantID' => CRM_Utils_Array::value('pid', $params),
-      ]),
-    );
-
-    // try to send emails only if email id is present
-    // and the do-not-email option is not checked for that contact
-    $contact = civicrm_api3('contact', 'getSingle', array('id' => $contactId));
-    if (
-      $contactEmail = CRM_Utils_Array::value('email', $contact) && !CRM_Utils_Array::value('do_not_email', $contact)
-    ) {
-      $sendTemplateParams['from'] = CRM_Utils_Array::value('from', $fromEmails);
-      $sendTemplateParams['toName'] = CRM_Utils_Array::value('display_name', $contact);
-      $sendTemplateParams['toEmail'] = CRM_Utils_Array::value('email', $contact);
-      $sendTemplateParams['cc'] = CRM_Utils_Array::value('cc', $fromEmails);
-      $sendTemplateParams['bcc'] = CRM_Utils_Array::value('bcc', $fromEmails);
-    }
-    list($mailSent, $subject, $message, $html) = CRM_Core_BAO_MessageTemplate::sendTemplate($sendTemplateParams);
-    return $mailSent;
-  }
-
-  /**
-   * Build list of email from/cc/bcc using the domain email id and the emails
-   * configured for the event
-   *
-   * @param int $eventId
-   *   The id of the event.
-   *
-   * @return array
-   *   an array of email ids
-   */
-  public static function getEmails($eventId = NULL) {
-    $emails = array();
-
-    // add all configured FROM email addresses
-    $domainFrom = CRM_Core_OptionGroup::values('from_email_address');
-    foreach (array_keys($domainFrom) as $k) {
-      $domainEmail = $domainFrom[$k];
-      $emails['from'] = $domainEmail;
-    }
-
-    if ($eventId) {
-      // add the emails configured for the event
-      $params = array('id' => $eventId);
-      $returnProperties = array('is_email_confirm', 'confirm_from_name', 'confirm_from_email', 'cc_confirm', 'bcc_confirm');
-      $eventEmail = array();
-
-      CRM_Core_DAO::commonRetrieve('CRM_Event_DAO_Event', $params, $eventEmail, $returnProperties);
-      if ($eventEmail['is_email_confirm']) {
-        if (
-          !empty($eventEmail['confirm_from_name']) &&
-          !empty($eventEmail['confirm_from_email'])
-        ) {
-          $eventEmailId = "{$eventEmail['confirm_from_name']} <{$eventEmail['confirm_from_email']}>";
-          $emails['from'] = $eventEmailId;
-        }
-        $emails['cc'] = CRM_Utils_Array::value('cc_confirm', $eventEmail);
-        $emails['bcc'] = CRM_Utils_Array::value('bcc_confirm', $eventEmail);
-      }
-    }
-    return $emails;
-  }
 
 }

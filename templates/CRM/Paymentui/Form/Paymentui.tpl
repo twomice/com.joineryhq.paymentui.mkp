@@ -32,22 +32,17 @@
           </td>
         </tr>
       {/foreach}
-      {if $contactId}
-      <thead class="sticky">
-            <td colspan = 5 scope="col"><strong>Total</strong></th>
-            <td class="font-size12pt "><span>$ </span><span name='total' id ='total'>0</span></td>
-      </thead>
-      {/if}
     </table>
     <p id="empty-events-list-notice">{ts}No unpaid balances remain for your events.{/ts}</p>
     </fieldset>
   </div>
 
+  {* ======= old
   <div id="paymentui-billing-form">
-    {* FIELD EXAMPLE: OPTION 1 (AUTOMATIC LAYOUT) *}
+    {* FIELD EXAMPLE: OPTION 1 (AUTOMATIC LAYOUT) 
     {include file="CRM/Core/BillingBlock.tpl" context="front-end"}
     {if $form.payment_processor.label}
-      {* PP selection only works with JS enabled, so we hide it initially *}
+      {* PP selection only works with JS enabled, so we hide it initially 
       <fieldset class="crm-group payment_options-group" style="display:none;">
         <legend>{ts}Payment Options{/ts}</legend>
         <div class="crm-section payment_processor-section">
@@ -72,36 +67,20 @@
       {/if}
 
   <div id="billing-payment-block">
-    {* If we have a payment processor, load it - otherwise it happens via ajax *}
+    {* If we have a payment processor, load it - otherwise it happens via ajax
     {if $ppType}
       {include file="CRM/Contribute/Form/Contribution/Main.tpl" snippet=4}
     {/if}
   </div>
   {include file="CRM/common/paymentBlock.tpl"}
 
-    {* FOOTER *}
+    {* FOOTER 
     <div class="crm-submit-buttons">
     {include file="CRM/common/formButtons.tpl" location="bottom"}
     </div>
-    {literal}
-
-    <script type="text/javascript">
-    function calculateTotal() {
-      var total = 0.00;
-      cj.each(cj( "input[name^='payment']" ), function() {
-        var amt = cj(this).val();
-        if ( cj.isNumeric(amt) ) {
-          total = parseFloat(total)+parseFloat(amt);
-        }
-      });
-      total = Math.round(total*100, 2)/100;
-        total.toFixed(2);
-
-      document.getElementById('total').innerHTML = total;
-    }
-    </script>
-    {/literal}
   </div>
+    *}
+  {include file="CRM/Contribute/Form/Contribution/Main.tpl"}
 {else}
   <p>{ts}No relevant events were found for you.{/ts}</p>
 {/if}

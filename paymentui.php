@@ -8,7 +8,7 @@ use CRM_Paymentui_ExtensionUtil as E;
  *
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_alterPaymentProcessorParams
  */
-function paymentui_civicrm_alterPaymentProcessorParams($paymentObj, &$rawParams, &$cookedParams) {
+function fixme_zz_paymentui_civicrm_alterPaymentProcessorParams($paymentObj, &$rawParams, &$cookedParams) {
   // Don't bother unless we're coming from our own PaymentUI page.
   if (CRM_Utils_Array::value('isPaymentuiForm', $rawParams) == 1) {
     // Get event titles for any participations for which payments are submitted.
