@@ -10,10 +10,10 @@ use CRM_Paymentui_ExtensionUtil as E;
  */
 function fixme_zz_paymentui_civicrm_alterPaymentProcessorParams($paymentObj, &$rawParams, &$cookedParams) {
   // Don't bother unless we're coming from our own PaymentUI page.
-  if (CRM_Utils_Array::value('isPaymentuiForm', $rawParams) == 1) {
+  if ($rawParams['isPaymentuiForm'] == 1) {
     // Get event titles for any participations for which payments are submitted.
     $paidParticipantIds = [];
-    foreach (CRM_Utils_Array::value('payment', $rawParams, [0]) as $participantId => $amount) {
+    foreach (($rawParams['payment'] ?? [0]) as $participantId => $amount) {
       if ($amount > 0) {
         $paidParticipantIds[] = $participantId;
       }
@@ -23,7 +23,7 @@ function fixme_zz_paymentui_civicrm_alterPaymentProcessorParams($paymentObj, &$r
       'return' => "event_id",
     ];
     $result = civicrm_api3('Participant', 'get', $apiParams);
-    $titles = CRM_Utils_Array::collect('event_title', CRM_Utils_Array::value('values', $result));
+    $titles = CRM_Utils_Array::collect('event_title', ($result['values'] ?? []));
     if (!empty($titles)) {
       // Concatenate event titles into the 'desc' parameter sent to the payment processor.
       // TODO: This works for paypal pro; add support for other processors?
@@ -52,7 +52,7 @@ function paymentui_civicrm_buildForm($formName, &$form) {
     // Get value from settings and set default.
     $eventSettings = CRM_Paymentui_Settings::getEventSettings($form->_id);
     $defaults = [
-      'is_paymentui' => CRM_Utils_Array::value('is_paymentui', $eventSettings, 0),
+      'is_paymentui' => ($eventSettings['is_paymentui'] ?? 0),
     ];
     $form->setDefaults($defaults);
     // Add JavaScript which will position the field correctly within the form.
@@ -81,7 +81,7 @@ function paymentui_civicrm_postProcess($formName, &$form) {
   // Save is_paymentui setting as set in form submission.
   if ($formName == 'CRM_Event_Form_ManageEvent_Fee') {
     $eventSettings = CRM_Paymentui_Settings::getEventSettings($form->_id);
-    $eventSettings['is_paymentui'] = CRM_Utils_Array::value('is_paymentui', $form->_submitValues, 0);
+    $eventSettings['is_paymentui'] = ($form->_submitValues['is_paymentui'] ?? 0);
     CRM_Paymentui_Settings::saveAllEventSettings($form->_id, $eventSettings);
   }
 }

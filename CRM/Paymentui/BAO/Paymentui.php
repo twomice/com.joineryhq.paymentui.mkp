@@ -114,7 +114,7 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
    */
   public static function eventIsPaymentui($eventId) {
     $eventSettings = CRM_Paymentui_Settings::getEventSettings($eventId);
-    return CRM_Utils_Array::value('is_paymentui', $eventSettings, 0);
+    return ($eventSettings['is_paymentui'] ?? 0);
   }
 
   /**
@@ -230,9 +230,9 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
   public static function updateParticipantSingleLineItemTotal($participantId, $amount) {
     $contributionId = self::getParticpantPaymentContributionId($participantId);
     $participant = self::getParticipant($participantId);
-    $eventId = CRM_Utils_Array::value('event_id', $participant);
+    $eventId = ($participant['event_id'] ?? NULL);
     $priceField = self::getSingleLineItemPriceFieldForEvent($eventId);
-    $priceFieldId = CRM_Utils_Array::value('id', $priceField);
+    $priceFieldId = ($priceField['id'] ?? NULL);
 
     // Build variables needed for changing the line item amount.
     $params = CRM_Event_Form_EventFees::setDefaultPriceSet($participantId, $eventId, FALSE);
@@ -261,8 +261,8 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
     $contributionId = CRM_Core_DAO::getFieldValue('CRM_Event_DAO_ParticipantPayment', $participantId, 'contribution_id', 'participant_id');
     if (!$contributionId) {
       $participant = self::getParticipant($participantId);
-      $eventId = CRM_Utils_Array::value('event_id', $participant);
-      $contactId = CRM_Utils_Array::value('contact_id', $participant);
+      $eventId = ($participant['event_id'] ?? NULL);
+      $contactId = ($participant['contact_id'] ?? NULL);
       // get price field
       $priceField = self::getSingleLineItemPriceFieldForEvent($eventId);
       $financialTypeId = $priceField['api.PriceFieldValue.get']['values'][0]['financial_type_id'];
@@ -272,7 +272,7 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
         'total_amount' => 0,
         'contact_id' => $contactId,
       ]);
-      $createdContributionId = CRM_Utils_Array::value('id', $contributionCreate);
+      $createdContributionId = ($contributionCreate['id'] ?? NULL);
 
       // create participantPayment
       if ($createdContributionId) {
@@ -291,7 +291,7 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
 
         // If the participantPayment was created correctly, get set to return
         // the created Contribution ID.
-        if (CRM_Utils_Array::value('id', $participantPaymentCreate)) {
+        if (($participantPaymentCreate['id'] ?? NULL)) {
           $contributionId = $createdContributionId;
         }
       }

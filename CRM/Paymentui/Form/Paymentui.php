@@ -167,8 +167,8 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
       //Function defined in bot.partial.payment extension - payment.php
       $paymentResponses = CRM_Paymentui_Util::process_partial_payments($paymentParams, $this->_participantInfo, $doPaymentResult);
       foreach ($this->_participantInfo as $participantId => $participantInfo) {
-        $paymentResponse = CRM_Utils_Array::value($participantId, $paymentResponses);
-        if (CRM_Utils_Array::value('success', $paymentResponse)) {
+        $paymentResponse = ($paymentResponses[$participantId] ?? NULL);
+        if (($paymentResponse['success'] ?? NULL)) {
           // Send email receipt.
           $params = $paymentResponse + [
             'is_email_receipt' => '1',
@@ -181,8 +181,8 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
           //Define status message
           $statusMsg = ts('Payment of %1 was processed successfully for %2 at <em>%3</em>.', [
             '1' => CRM_Utils_Money::format($paymentResponse['payment']['total_amount'], $paymentResponse['payment']['currency']),
-            '2' => CRM_Utils_Array::value('contact_name', $participantInfo),
-            '3' => CRM_Utils_Array::value('event_name', $paymentResponse),
+            '2' => ($participantInfo['contact_name'] ?? NULL),
+            '3' => ($paymentResponse['event_name'] ?? NULL),
           ]);
           CRM_Core_Session::setStatus($statusMsg, 'Success:', 'success');
         }
@@ -230,13 +230,13 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
       //Function defined in bot.partial.payment extension - payment.php
       $paymentResponses = CRM_Paymentui_Util::process_partial_payments($paymentParams, $this->_participantInfo);
       foreach ($this->_participantInfo as $participantId => $participantInfo) {
-        $paymentResponse = CRM_Utils_Array::value($participantId, $paymentResponses);
-        if (CRM_Utils_Array::value('success', $paymentResponse)) {
+        $paymentResponse = ($paymentResponses[$participantId] ?? NULL);
+        if (($paymentResponse['success'] ?? NULL)) {
           //Define status message
-          $trxn = CRM_Utils_Array::value('trxn', $paymentResponse);
+          $trxn = ($paymentResponse['trxn'] ?? NULL);
           $statusMsg = ts('Payment of %1 was processed successfully for <em>%2</em>.', [
             '1' => CRM_Utils_Money::format($paymentResponse['payment']['total_amount'], $paymentResponse['payment']['currency']),
-            '2' => CRM_Utils_Array::value('event_name', $paymentResponse),
+            '2' => ($paymentResponse['event_name'] ?? NULL),
           ]);
           $params = $paymentResponse + [
             'is_email_receipt' => '1',
@@ -284,7 +284,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
    * @return mixed
    */
   private function emailReceipt(&$params) {
-    $eventId = CRM_Core_DAO::getFieldValue('CRM_Event_DAO_Participant', CRM_Utils_Array::value('pid', $params), 'event_id', 'id');
+    $eventId = CRM_Core_DAO::getFieldValue('CRM_Event_DAO_Participant', ($params['pid'] ?? NULL), 'event_id', 'id');
     $fromEmails = self::getEmails($eventId);
 
     $returnProperties = ['fee_label', 'start_date', 'end_date', 'is_show_location', 'title'];
@@ -295,7 +295,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     $this->assign('component', 'event');
 
     $this->assign('event', $event);
-    $isShowLocation = CRM_Utils_Array::value('is_show_location', $event);
+    $isShowLocation = ($event['is_show_location'] ?? NULL);
     $this->assign('isShowLocation', $isShowLocation);
     if ($isShowLocation == 1) {
       $locationParams = [
@@ -308,27 +308,27 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
 
     // assign payment info here
     $this->assign('isRefund', FALSE);
-    $payment = CRM_Utils_Array::value('payment', $params);
-    $balance = CRM_Utils_Array::value('balance', $params, 0) - $payment['total_amount'];
+    $payment = ($params['payment'] ?? NULL);
+    $balance = ($params['balance'] ?? 0) - $payment['total_amount'];
     $this->assign('amountOwed', $balance);
     // Contribution total amount.
-    $this->assign('totalAmount', CRM_Utils_Array::value('total_amount', $params));
+    $this->assign('totalAmount', ($params['total_amount'] ?? NULL));
     // Transaction payment amount.
     $this->assign('paymentAmount', $payment['total_amount']);
     $this->assign('paymentsComplete', ($balance == 0) ? 1 : 0);
 
-    $this->assign('contactDisplayName', CRM_Utils_Array::value('contact_name', $params));
+    $this->assign('contactDisplayName', ($params['contact_name'] ?? NULL));
 
     // assign trxn details
     $this->assign('trxn_id', $payment['trxn_id']);
     $this->assign('receive_date', $payment['trxn_date']);
     if ($payment_instrument_id = $payment['payment_instrument_id']) {
       $paymentInstrument = CRM_Contribute_PseudoConstant::paymentInstrument();
-      $this->assign('paidBy', CRM_Utils_Array::value($payment_instrument_id, $paymentInstrument));
+      $this->assign('paidBy', ($paymentInstrument[$payment_instrument_id] ?? NULL));
     }
     $this->assign('checkNumber', $payment['check_number']);
 
-    $contactId = CRM_Utils_Array::value('cid', $params);
+    $contactId = ($params['cid'] ?? NULL);
 
     $sendTemplateParams = [
       'groupName' => 'msg_tpl_workflow_contribution',
@@ -344,7 +344,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
         'contactID' => $params['cid'],
         'financialTrxnID' => $payment['id'],
         'eventID' => $eventId,
-        'participantID' => CRM_Utils_Array::value('pid', $params),
+        'participantID' => ($params['pid'] ?? NULL),
       ]),
     ];
 
@@ -352,13 +352,13 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     // and the do-not-email option is not checked for that contact
     $contact = civicrm_api3('contact', 'getSingle', ['id' => $contactId]);
     if (
-      $contactEmail = CRM_Utils_Array::value('email', $contact) && !CRM_Utils_Array::value('do_not_email', $contact)
+      $contactEmail = ($contact['email'] ?? NULL) && !($contact['do_not_email'] ?? NULL)
     ) {
-      $sendTemplateParams['from'] = CRM_Utils_Array::value('from', $fromEmails);
-      $sendTemplateParams['toName'] = CRM_Utils_Array::value('display_name', $contact);
-      $sendTemplateParams['toEmail'] = CRM_Utils_Array::value('email', $contact);
-      $sendTemplateParams['cc'] = CRM_Utils_Array::value('cc', $fromEmails);
-      $sendTemplateParams['bcc'] = CRM_Utils_Array::value('bcc', $fromEmails);
+      $sendTemplateParams['from'] = ($fromEmails['from'] ?? NULL);
+      $sendTemplateParams['toName'] = ($contact['display_name'] ?? NULL);
+      $sendTemplateParams['toEmail'] = ($contact['email'] ?? NULL);
+      $sendTemplateParams['cc'] = ($fromEmails['cc'] ?? NULL);
+      $sendTemplateParams['bcc'] = ($fromEmails['bcc'] ?? NULL);
     }
     list($mailSent, $subject, $message, $html) = CRM_Core_BAO_MessageTemplate::sendTemplate($sendTemplateParams);
     return $mailSent;
@@ -399,8 +399,8 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
           $eventEmailId = "{$eventEmail['confirm_from_name']} <{$eventEmail['confirm_from_email']}>";
           $emails['from'] = $eventEmailId;
         }
-        $emails['cc'] = CRM_Utils_Array::value('cc_confirm', $eventEmail);
-        $emails['bcc'] = CRM_Utils_Array::value('bcc_confirm', $eventEmail);
+        $emails['cc'] = ($eventEmail['cc_confirm'] ?? NULL);
+        $emails['bcc'] = ($eventEmail['bcc_confirm'] ?? NULL);
       }
     }
     return $emails;

@@ -13,8 +13,8 @@ class CRM_Paymentui_Settings {
       'option_group_id' => "paymentui",
       'name' => $settingName,
     ]);
-    $resultValue = CRM_Utils_Array::value(0, $result['values'], []);
-    $settingJson = CRM_Utils_Array::value('value', $resultValue, '{}');
+    $resultValue = ($result['values'][0] ?? []);
+    $settingJson = ($resultValue['value'] ?? '{}');
     return json_decode($settingJson, TRUE);
   }
 
@@ -28,7 +28,7 @@ class CRM_Paymentui_Settings {
 
     $createParams = [];
 
-    if ($optionValueId = CRM_Utils_Array::value('id', $result)) {
+    if ($optionValueId = ($result['id'] ?? NULL)) {
       $createParams['id'] = $optionValueId;
     }
     else {

@@ -61,7 +61,7 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
           default:
             $add = 'add' . $setting['quick_form_type'];
             if ($add == 'addElement') {
-              $this->$add($setting['html_type'], $name, ts($setting['title']), CRM_Utils_Array::value('html_attributes', $setting, []));
+              $this->$add($setting['html_type'], $name, ts($setting['title']), ($setting['html_attributes'] ?? []));
             }
             else {
               $this->$add($name, ts($setting['title']));
@@ -163,7 +163,7 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
   public function setDefaultValues() {
     $result = civicrm_api3('setting', 'get', ['return' => array_keys($this->_settings)]);
     $domainID = CRM_Core_Config::domainID();
-    $ret = CRM_Utils_Array::value($domainID, $result['values']);
+    $ret = ($result['values'][$domainID] ?? NULL);
     return $ret;
   }
 
@@ -218,7 +218,7 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
       return call_user_func($setting['X_options_callback']);
     }
     else {
-      return CRM_Utils_Array::value('X_options', $setting, []);
+      return ($setting['X_options'] ?? []);
     }
   }
 
