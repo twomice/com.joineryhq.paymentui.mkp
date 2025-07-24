@@ -131,31 +131,24 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     
     $totalAmount = $this->getMainContributionAmount();
 
-    // FIXME: Need to think about how this is configured. How much is configured in the contribution page, and how much
-    //   in the extension? What abourt receipts? Pay later (no)?  Hide some configs on contribution page config, because irrelevant (price sets; force enable 'other amount')
-    
-
     //Calculate total amount paid and individual amount for each contribution
     foreach ($this->_params['payment'] as $pid => $pVal) {
       $this->_participantInfo[$pid]['partial_payment_pay'] = $pVal;
     }
 
-    // FIXME: Confirm this section is not needed.
     // Building params for CC processing
-    $this->_params["state_province-{$this->_bltID}"] = $this->_params["billing_state_province-{$this->_bltID}"] = CRM_Core_PseudoConstant::stateProvinceAbbreviation($this->_params["billing_state_province_id-{$this->_bltID}"]);
-    $this->_params["country-{$this->_bltID}"] = $this->_params["billing_country-{$this->_bltID}"] = CRM_Core_PseudoConstant::countryIsoCode($this->_params["billing_country_id-{$this->_bltID}"]);
-    $this->_params['year'] = CRM_Core_Payment_Form::getCreditCardExpirationYear($this->_params);
-    $this->_params['month'] = CRM_Core_Payment_Form::getCreditCardExpirationMonth($this->_params);
-    $this->_params['ip_address'] = CRM_Utils_System::ipAddress();
-    $this->_params['amount'] = $totalAmount;
-//    $this->_params['amount_level'] = $params['amount_level'];
-//    $this->_params['currencyID'] = $config->defaultCurrency;
-    $this->_params['payment_action'] = 'Sale';
-    $this->_params['invoiceID'] = md5(uniqid(rand(), TRUE));
-    
     $paymentParams = $this->_params;
+    $paymentParams["state_province-{$this->_bltID}"] = $this->_params["billing_state_province-{$this->_bltID}"] = CRM_Core_PseudoConstant::stateProvinceAbbreviation($this->_params["billing_state_province_id-{$this->_bltID}"]);
+    $paymentParams["country-{$this->_bltID}"] = $this->_params["billing_country-{$this->_bltID}"] = CRM_Core_PseudoConstant::countryIsoCode($this->_params["billing_country_id-{$this->_bltID}"]);
+    $paymentParams['year'] = CRM_Core_Payment_Form::getCreditCardExpirationYear($this->_params);
+    $paymentParams['month'] = CRM_Core_Payment_Form::getCreditCardExpirationMonth($this->_params);
+    $paymentParams['ip_address'] = CRM_Utils_System::ipAddress();
+    $paymentParams['amount'] = $totalAmount;
+    $paymentParams['payment_action'] = 'Sale';
+    $paymentParams['invoiceID'] = md5(uniqid(rand(), TRUE));
     $paymentParams['currency'] = $this->getCurrency();
     $paymentParams['contactID'] = $this->_contactID;
+    
     $paymentProcessor = Civi\Payment\System::singleton()->getById($this->_paymentProcessorID);
     $doPaymentResult = $paymentProcessor->doPayment($paymentParams);
     $paymentParams['trxn_id'] = $doPaymentResult['trxn_id'];

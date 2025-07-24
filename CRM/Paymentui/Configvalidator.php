@@ -4,9 +4,6 @@
  * Validator for selected Contribution Page settings.
  */
 class CRM_Paymentui_Configvalidator {
-  // Fixme: rename/change usage for:
-  //  method: contributionPageConfigIsValid
-  //  method: doContributionPageConfigChecks
   
   private $contributionPageId;
   private $failFast = TRUE;
