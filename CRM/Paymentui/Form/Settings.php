@@ -12,10 +12,10 @@ use CRM_Paymentui_ExtensionUtil as E;
  */
 class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
 
-  public static $settingFilter = array('group' => 'paymentui');
+  public static $settingFilter = ['group' => 'paymentui'];
   public static $extensionName = 'com.joineryhq.paymentui.mkp';
-  private $_submittedValues = array();
-  private $_settings = array();
+  private $_submittedValues = [];
+  private $_settings = [];
 
   public function __construct($state = NULL, $action = CRM_Core_Action::NONE, $method = 'post', $name = NULL) {
 
@@ -61,7 +61,7 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
           default:
             $add = 'add' . $setting['quick_form_type'];
             if ($add == 'addElement') {
-              $this->$add($setting['html_type'], $name, ts($setting['title']), CRM_Utils_Array::value('html_attributes', $setting, array()));
+              $this->$add($setting['html_type'], $name, ts($setting['title']), CRM_Utils_Array::value('html_attributes', $setting, []));
             }
             else {
               $this->$add($name, ts($setting['title']));
@@ -75,19 +75,19 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
         $rules_args = (array) $setting['X_form_rules_args'];
         foreach ($rules_args as $rule_args) {
           array_unshift($rule_args, $setting['name']);
-          call_user_func_array(array($this, 'addRule'), $rule_args);
+          call_user_func_array([$this, 'addRule'], $rule_args);
         }
       }
     }
     $this->assign("descriptions", $descriptions);
 
-    $this->addButtons(array(
-      array(
+    $this->addButtons([
+      [
         'type' => 'submit',
         'name' => ts('Submit'),
         'isDefault' => TRUE,
-      ),
-    ));
+      ],
+    ]);
 
     $style_path = CRM_Core_Resources::singleton()->getPath(self::$extensionName, 'css/extension.css');
     if ($style_path) {
@@ -109,14 +109,14 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
   /**
    * Get the fields/elements defined in this form.
    *
-   * @return array (string)
+   * @return [string)
    */
   public function getRenderableElementNames() {
     // The _elements list includes some items which should not be
     // auto-rendered in the loop -- such as "qfKey" and "buttons". These
     // items don't have labels. We'll identify renderable by filtering on
     // the 'label'.
-    $elementNames = array();
+    $elementNames = [];
     foreach ($this->_elements as $element) {
       $label = $element->getLabel();
       if (!empty($label)) {
@@ -136,7 +136,7 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
   }
 
   public static function getSettings() {
-    $settings = civicrm_api3('setting', 'getfields', array('filters' => self::$settingFilter));
+    $settings = civicrm_api3('setting', 'getfields', ['filters' => self::$settingFilter]);
     return $settings['values'];
   }
 
@@ -161,17 +161,17 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
    * @see CRM_Core_Form::setDefaultValues()
    */
   public function setDefaultValues() {
-    $result = civicrm_api3('setting', 'get', array('return' => array_keys($this->_settings)));
+    $result = civicrm_api3('setting', 'get', ['return' => array_keys($this->_settings)]);
     $domainID = CRM_Core_Config::domainID();
     $ret = CRM_Utils_Array::value($domainID, $result['values']);
     return $ret;
   }
 
   public static function getExcludeStatusOptions() {
-    $options = array();
-    $result = civicrm_api3('ParticipantStatusType', 'get', array(
-      'options' => array('limit' => 0),
-    ));
+    $options = [];
+    $result = civicrm_api3('ParticipantStatusType', 'get', [
+      'options' => ['limit' => 0],
+    ]);
     foreach ($result['values'] as $id => $value) {
       $id = $value['id'];
       $label = $value['label'];
@@ -182,11 +182,11 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
   }
 
   public static function getExcludeRoleOptions() {
-    $options = array();
-    $result = civicrm_api3('OptionValue', 'get', array(
+    $options = [];
+    $result = civicrm_api3('OptionValue', 'get', [
       'option_group_id' => "participant_role",
-      'options' => array('limit' => 0),
-    ));
+      'options' => ['limit' => 0],
+    ]);
     foreach ($result['values'] as $id => $value) {
       $id = $value['value'];
       $label = $value['label'];
@@ -200,9 +200,9 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
     $baseOptions = [
       '0' => '- ' . E::ts('Select') . ' -',
     ];
-    $result = civicrm_api3('ContributionPage', 'get', array(
-      'options' => array('limit' => 0),
-    ));
+    $result = civicrm_api3('ContributionPage', 'get', [
+      'options' => ['limit' => 0],
+    ]);
     $pageOptions = [];
     $currentValue = \Civi::settings()->get('paymentui_contribution_page_id');
     foreach ($result['values'] as $id => $value) {
@@ -218,7 +218,7 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
       return call_user_func($setting['X_options_callback']);
     }
     else {
-      return CRM_Utils_Array::value('X_options', $setting, array());
+      return CRM_Utils_Array::value('X_options', $setting, []);
     }
   }
 

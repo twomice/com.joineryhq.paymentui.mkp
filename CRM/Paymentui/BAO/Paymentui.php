@@ -4,9 +4,9 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
 
   public static function getParticipantInfo($contactID) {
     // Get participant statuses.
-    $result = civicrm_api3('ParticipantStatusType', 'get', array(
-      'options' => array('limit' => 0),
-    ));
+    $result = civicrm_api3('ParticipantStatusType', 'get', [
+      'options' => ['limit' => 0],
+    ]);
     $participant_statuses = $result['values'];
 
     // Get related contacts for which this contact may have paid.
@@ -14,29 +14,29 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
     $relatedContactIDs[] = $contactID;
 
     // Find out which statuses to exclude.
-    $api_params = array(
-      'return' => array(
+    $api_params = [
+      'return' => [
         'paymentui_exclude_participant_status',
         'paymentui_exclude_participant_role',
-      ),
-    );
+      ],
+    ];
     $result = civicrm_api3('setting', 'get', $api_params);
-    $paymentui_exclude_participant_status = CRM_Utils_Array::value('paymentui_exclude_participant_status', $result['values'][CRM_Core_Config::domainID()], array());
+    $paymentui_exclude_participant_status = \Civi::settings()->get('paymentui_exclude_participant_status');
     $paymentui_exclude_participant_status[] = 0;
-    $paymentui_exclude_participant_role = CRM_Utils_Array::value('paymentui_exclude_participant_role', $result['values'][CRM_Core_Config::domainID()], array());
+    $paymentui_exclude_participant_role = \Civi::settings()->get('paymentui_exclude_participant_role');
 
-    $query_params = array();
-    $cid_placeholders = array();
+    $query_params = [];
+    $cid_placeholders = [];
     $i = 1;
     foreach ($relatedContactIDs as $param) {
       $cid_placeholders[] = '%' . $i;
-      $query_params[$i] = array($param, 'Int');
+      $query_params[$i] = [$param, 'Int'];
       $i++;
     }
-    $status_placeholders = array();
+    $status_placeholders = [];
     foreach ($paymentui_exclude_participant_status as $param) {
       $status_placeholders[] = '%' . $i;
-      $query_params[$i] = array($param, 'Int');
+      $query_params[$i] = [$param, 'Int'];
       $i++;
     }
 
@@ -63,12 +63,12 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
       // works correctly, regardless of whether $param appears first, last, alone,
       // or in the middle of a delimited string.)
       $sql .= "AND concat('" . CRM_core_dao::VALUE_SEPARATOR . "', p.role_id, '" . CRM_core_dao::VALUE_SEPARATOR . "') NOT LIKE '%" . CRM_core_dao::VALUE_SEPARATOR . $param . CRM_core_dao::VALUE_SEPARATOR . "%'";
-      $query_params[$i] = array($param, 'Int');
+      $query_params[$i] = [$param, 'Int'];
       $i++;
     }
     $dao = CRM_Core_DAO::executeQuery($sql, $query_params);
 
-    $participantInfo = array();
+    $participantInfo = [];
     if ($dao->N) {
       while ($dao->fetch()) {
         if (!self::eventIsPaymentui($dao->event_id)) {
@@ -141,7 +141,7 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
    */
   public static function getRelatedContacts($contactID) {
     //Get relationship type id of Spouse, Child, Child/Ward of
-    $relTypeIDs = array();
+    $relTypeIDs = [];
     $relTypeIDs['parent'] = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_RelationshipType', 'Parent of', 'id', 'label_a_b');
     $relTypeIDs['guardian'] = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_RelationshipType', 'Parent/Guardian of', 'id', 'label_a_b');
     $relTypeIDs['spouse'] = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_RelationshipType', 'Spouse of', 'id', 'label_a_b');
@@ -174,7 +174,7 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
     $CCAccountID = CRM_Core_DAO::getFieldValue('CRM_Financial_DAO_FinancialAccount', 'Payment Processor Account', 'id', 'name');
     $paymentMethods = CRM_Contribute_PseudoConstant::paymentInstrument();
     $CC_id = array_search('Credit Card', $paymentMethods);
-    $params = array(
+    $params = [
       'to_financial_account_id' => $CCAccountID,
       'from_financial_account_id' => $fromAccountID,
       'trxn_date' => date('Ymd'),
@@ -186,25 +186,25 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
       'trxn_id' => $payment['trxn_id'],
       'payment_processor' => $payment_processor_id,
       'payment_instrument_id' => $CC_id,
-    );
+    ];
     require_once 'CRM/Core/BAO/FinancialTrxn.php';
 
     $trxn = new CRM_Financial_DAO_FinancialTrxn();
     $trxn->copyValues($params);
-    $fids = array();
+    $fids = [];
     if (!CRM_Utils_Rule::currencyCode($trxn->currency)) {
       $config = CRM_Core_Config::singleton();
       $trxn->currency = $config->defaultCurrency;
     }
 
     $trxn->save();
-    $entityFinancialTrxnParams = array(
+    $entityFinancialTrxnParams = [
       'entity_table' => "civicrm_financial_trxn",
       'entity_id' => $trxn->id,
       'financial_trxn_id' => $trxn->id,
       'amount' => $params['total_amount'],
       'currency' => $trxn->currency,
-    );
+    ];
     $entityTrxn = new CRM_Financial_DAO_EntityFinancialTrxn();
     $entityTrxn->copyValues($entityFinancialTrxnParams);
     $entityTrxn->save();
@@ -249,10 +249,10 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
   public static function getParticipant($participantId) {
     static $participant;
     if (!isset($participant)) {
-      $participant = civicrm_api3('participant', 'getSingle', array(
+      $participant = civicrm_api3('participant', 'getSingle', [
         'sequential' => 1,
         'id' => $participantId,
-      ));
+      ]);
     }
     return $participant;
   }
@@ -267,19 +267,19 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
       $priceField = self::getSingleLineItemPriceFieldForEvent($eventId);
       $financialTypeId = $priceField['api.PriceFieldValue.get']['values'][0]['financial_type_id'];
       // create contribution
-      $contributionCreate = civicrm_api3('Contribution', 'create', array(
+      $contributionCreate = civicrm_api3('Contribution', 'create', [
         'financial_type_id' => $financialTypeId,
         'total_amount' => 0,
         'contact_id' => $contactId,
-      ));
+      ]);
       $createdContributionId = CRM_Utils_Array::value('id', $contributionCreate);
 
       // create participantPayment
       if ($createdContributionId) {
-        $participantPaymentCreate = civicrm_api3('ParticipantPayment', 'create', array(
+        $participantPaymentCreate = civicrm_api3('ParticipantPayment', 'create', [
           'participant_id' => $participantId,
           'contribution_id' => $createdContributionId,
-        ));
+        ]);
         // Call getFieldValue() with $force=TRUE (5th parameter), in order to
         // force rebuilding of cached values for this participantPaymentID;
         // apparently civicrm has by this time already performed this query, and
@@ -303,9 +303,9 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
     static $priceField;
 
     if (!isset($priceField)) {
-      $params = array(
-        '1' => array($eventId, 'Int'),
-      );
+      $params = [
+        '1' => [$eventId, 'Int'],
+      ];
       $priceSetId = CRM_Core_DAO::singleValueQuery("
         SELECT price_set_id
         FROM civicrm_price_set_entity

@@ -28,11 +28,11 @@ class CRM_Paymentui_Util {
           $contributionStatuses = CRM_Contribute_PseudoConstant::contributionStatus(NULL, 'name');
           //Update contribution status from pending to partially paid
           $updateContribution = new CRM_Contribute_DAO_Contribution();
-          $contributionParams = array(
+          $contributionParams = [
             'id' => $pInfo['contribution_id'],
             'contact_id' => $pInfo['cid'],
             'contribution_status_id' => array_search('Partially paid', $contributionStatuses),
-          );
+          ];
           $updateContribution->copyValues($contributionParams);
           $updateContribution->save();
           //Update participant Status from 'Pending from Pay Later' to 'Partially Paid'

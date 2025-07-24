@@ -160,7 +160,7 @@ class CRM_Paymentui_Configvalidator {
         AND entity_id = %1
     ";
     $queryParams = [
-      1 => array($this->contributionPageId, 'Integer'),
+      1 => [$this->contributionPageId, 'Integer'],
     ];
     $sql = CRM_Core_DAO::composeQuery($query, $queryParams);
     $pledgeBlockCount = CRM_Core_DAO::singleValueQuery($query, $queryParams);
@@ -182,7 +182,7 @@ class CRM_Paymentui_Configvalidator {
         AND is_active
     ";
     $queryParams = [
-      1 => array($this->contributionPageId, 'Integer'),
+      1 => [$this->contributionPageId, 'Integer'],
     ];
     $sql = CRM_Core_DAO::composeQuery($query, $queryParams);
     $pcpBlockCount = CRM_Core_DAO::singleValueQuery($query, $queryParams);

@@ -13,7 +13,7 @@ function fixme_zz_paymentui_civicrm_alterPaymentProcessorParams($paymentObj, &$r
   if (CRM_Utils_Array::value('isPaymentuiForm', $rawParams) == 1) {
     // Get event titles for any participations for which payments are submitted.
     $paidParticipantIds = [];
-    foreach (CRM_Utils_Array::value('payment', $rawParams, array(0)) as $participantId => $amount) {
+    foreach (CRM_Utils_Array::value('payment', $rawParams, [0]) as $participantId => $amount) {
       if ($amount > 0) {
         $paidParticipantIds[] = $participantId;
       }

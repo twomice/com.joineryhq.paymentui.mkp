@@ -59,22 +59,22 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
       $this->assign('displayName', CRM_Contact_BAO_Contact::displayName($this->_contactID));
 
       //Set column headers for the table
-      $columnHeaders = array('Event', 'Registrant', 'Cost', 'Paid to Date', 'Amount Unpaid', 'Make Payment');
+      $columnHeaders = ['Event', 'Registrant', 'Cost', 'Paid to Date', 'Amount Unpaid', 'Make Payment'];
       $this->assign('columnHeaders', $columnHeaders);
 
       $totalAmount = 0;
       foreach ($this->_participantInfo as $pid => $pInfo) {
         $totalAmount += $pInfo['total_amount'];
         if ($pInfo['balance']) {
-          $payment_html_attributes = array(
+          $payment_html_attributes = [
             'class' => 'paymentui-payment-amount',
-          );
+          ];
           $element = & $this->add('text', "payment[$pid]", NULL, $payment_html_attributes, FALSE);
         }
       }
 
       // Define form validation.
-      $this->addFormRule(array('CRM_Paymentui_Form_Paymentui', 'formRule'), $this);
+      $this->addFormRule(['CRM_Paymentui_Form_Paymentui', 'formRule'], $this);
     }
 
     // Include extra CSS styles.
@@ -154,10 +154,10 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     $paymentParams['trxn_id'] = $doPaymentResult['trxn_id'];
 
     if (is_a($doPaymentResult, 'CRM_Core_Error')) {
-      $statusMsg = ts('Payment of %1 failed. Error(s):<br />%2', array(
+      $statusMsg = ts('Payment of %1 failed. Error(s):<br />%2', [
         '1' => CRM_Utils_Money::format($totalAmount),
         '2' => CRM_Core_Error::getMessages($doPaymentResult),
-      ));
+      ]);
       CRM_Core_Session::setStatus($statusMsg, ts('Failed'), 'error');
     }
     else {
@@ -171,20 +171,20 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
         if (CRM_Utils_Array::value('success', $paymentResponse)) {
 //          $trxn = CRM_Utils_Array::value('trxn', $paymentResponse);
           // Send email receipt.
-          $params = $paymentResponse + array(
+          $params = $paymentResponse + [
             'is_email_receipt' => '1',
             'receipt_text' => '',
             'MAX_FILE_SIZE' => '2097152',
             'confirm_email_text' => '',
-          );
+          ];
           $sendReceipt = $this->emailReceipt($params);
 
           //Define status message
-          $statusMsg = ts('Payment of %1 was processed successfully for %2 at <em>%3</em>.', array(
+          $statusMsg = ts('Payment of %1 was processed successfully for %2 at <em>%3</em>.', [
             '1' => CRM_Utils_Money::format($paymentResponse['payment']['total_amount'], $paymentResponse['payment']['currency']),
             '2' => CRM_Utils_Array::value('contact_name', $participantInfo),
             '3' => CRM_Utils_Array::value('event_name', $paymentResponse),
-          ));
+          ]);
           CRM_Core_Session::setStatus($statusMsg, 'Success:', 'success');
         }
       }
@@ -192,7 +192,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
 
 /*
       // Save billing details to new or existing billing address.
-      $api_params = array(
+      $api_params = [
         'street_address' => $this->_params['billing_street_address-5'],
         'city' => $this->_params['billing_city-5'],
         'state_province_id' => $this->_params['billing_state_province_id-5'],
@@ -200,11 +200,11 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
         'country_id' => $this->_params['billing_country_id-5'],
         'location_type_id' => "Billing",
         'contact_id' => $this->_contactID,
-      );
-      $result = civicrm_api3('Address', 'get', array(
+      ];
+      $result = civicrm_api3('Address', 'get', [
         'location_type_id' => "Billing",
         'contact_id' => $this->_contactID,
-      ));
+      ]);
       if (!empty($result['values'])) {
         $api_params['id'] = min(array_keys($result['values']));
       }
@@ -240,10 +240,10 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     $payment = Civi\Payment\System::singleton()->getByProcessor($this->_paymentProcessor);
     $doPaymentResult = $payment->doPayment($paymentParams);
     if (is_a($doPaymentResult, 'CRM_Core_Error')) {
-      $statusMsg = ts('Payment of %1 failed. Error(s):<br />%2', array(
+      $statusMsg = ts('Payment of %1 failed. Error(s):<br />%2', [
         '1' => CRM_Utils_Money::format($totalAmount),
         '2' => CRM_Core_Error::getMessages($doPaymentResult),
-      ));
+      ]);
       CRM_Core_Session::setStatus($statusMsg, ts('Failed'), 'error');
     }
     else {
@@ -258,16 +258,16 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
         if (CRM_Utils_Array::value('success', $paymentResponse)) {
           //Define status message
           $trxn = CRM_Utils_Array::value('trxn', $paymentResponse);
-          $statusMsg = ts('Payment of %1 was processed successfully for <em>%2</em>.', array(
+          $statusMsg = ts('Payment of %1 was processed successfully for <em>%2</em>.', [
             '1' => CRM_Utils_Money::format($paymentResponse['payment']['total_amount'], $paymentResponse['payment']['currency']),
             '2' => CRM_Utils_Array::value('event_name', $paymentResponse),
-          ));
-          $params = $paymentResponse + array(
+          ]);
+          $params = $paymentResponse + [
             'is_email_receipt' => '1',
             'receipt_text' => '',
             'MAX_FILE_SIZE' => '2097152',
             'confirm_email_text' => '',
-          );
+          ];
           $sendReceipt = $this->emailReceipt($params);
           CRM_Core_Session::setStatus($statusMsg, ts('Saved'), 'success');
         }
@@ -275,7 +275,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
       parent::postProcess();
 
       // Save billing details to new or existing billing address.
-      $api_params = array(
+      $api_params = [
         'street_address' => $this->_params['billing_street_address-5'],
         'city' => $this->_params['billing_city-5'],
         'state_province_id' => $this->_params['billing_state_province_id-5'],
@@ -283,11 +283,11 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
         'country_id' => $this->_params['billing_country_id-5'],
         'location_type_id' => "Billing",
         'contact_id' => $this->_contactID,
-      );
-      $doPaymentResult = civicrm_api3('Address', 'get', array(
+      ];
+      $doPaymentResult = civicrm_api3('Address', 'get', [
         'location_type_id' => "Billing",
         'contact_id' => $this->_contactID,
-      ));
+      ]);
       if (!empty($doPaymentResult['values'])) {
         $api_params['id'] = min(array_keys($doPaymentResult['values']));
       }
@@ -311,7 +311,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     $eventId = CRM_Core_DAO::getFieldValue('CRM_Event_DAO_Participant', CRM_Utils_Array::value('pid', $params), 'event_id', 'id');
     $fromEmails = self::getEmails($eventId);
 
-    $returnProperties = array('fee_label', 'start_date', 'end_date', 'is_show_location', 'title');
+    $returnProperties = ['fee_label', 'start_date', 'end_date', 'is_show_location', 'title'];
     CRM_Core_DAO::commonRetrieveAll('CRM_Event_DAO_Event', 'id', $eventId, $events, $returnProperties);
     $event = $events[$eventId];
 
@@ -322,10 +322,10 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     $isShowLocation = CRM_Utils_Array::value('is_show_location', $event);
     $this->assign('isShowLocation', $isShowLocation);
     if ($isShowLocation == 1) {
-      $locationParams = array(
+      $locationParams = [
         'entity_id' => $eventId,
         'entity_table' => 'civicrm_event',
-      );
+      ];
       $location = CRM_Core_BAO_Location::getValues($locationParams, TRUE);
       $this->assign('location', $location);
     }
@@ -354,7 +354,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
 
     $contactId = CRM_Utils_Array::value('cid', $params);
 
-    $sendTemplateParams = array(
+    $sendTemplateParams = [
       'groupName' => 'msg_tpl_workflow_contribution',
       'valueName' => 'payment_or_refund_notification',
       'contactId' => $contactId,
@@ -370,11 +370,11 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
         'eventID' => $eventId,
         'participantID' => CRM_Utils_Array::value('pid', $params),
       ]),
-    );
+    ];
 
     // try to send emails only if email id is present
     // and the do-not-email option is not checked for that contact
-    $contact = civicrm_api3('contact', 'getSingle', array('id' => $contactId));
+    $contact = civicrm_api3('contact', 'getSingle', ['id' => $contactId]);
     if (
       $contactEmail = CRM_Utils_Array::value('email', $contact) && !CRM_Utils_Array::value('do_not_email', $contact)
     ) {
@@ -399,7 +399,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
    *   an array of email ids
    */
   public static function getEmails($eventId = NULL) {
-    $emails = array();
+    $emails = [];
 
     // add all configured FROM email addresses
     $domainFrom = CRM_Core_OptionGroup::values('from_email_address');
@@ -410,9 +410,9 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
 
     if ($eventId) {
       // add the emails configured for the event
-      $params = array('id' => $eventId);
-      $returnProperties = array('is_email_confirm', 'confirm_from_name', 'confirm_from_email', 'cc_confirm', 'bcc_confirm');
-      $eventEmail = array();
+      $params = ['id' => $eventId];
+      $returnProperties = ['is_email_confirm', 'confirm_from_name', 'confirm_from_email', 'cc_confirm', 'bcc_confirm'];
+      $eventEmail = [];
 
       CRM_Core_DAO::commonRetrieve('CRM_Event_DAO_Event', $params, $eventEmail, $returnProperties);
       if ($eventEmail['is_email_confirm']) {
@@ -433,14 +433,14 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
   /**
    * Get the fields/elements defined in this form.
    *
-   * @return array (string)
+   * @return [string]
    */
   private function getRenderableElementNames() {
     // The _elements list includes some items which should not be
     // auto-rendered in the loop -- such as "qfKey" and "buttons".  These
     // items don't have labels.  We'll identify renderable by filtering on
     // the 'label'.
-    $elementNames = array();
+    $elementNames = [];
     foreach ($this->_elements as $element) {
       $label = $element->getLabel();
       if (!empty($label)) {
@@ -541,25 +541,25 @@ class foobar {
    * @access public
    */
   public function preProcess() {
-    $this->_paymentProcessor = array('billing_mode' => 1);
-    $locationTypes = CRM_Core_PseudoConstant::get('CRM_Core_DAO_Address', 'location_type_id', array(), 'validate');
+    $this->_paymentProcessor = ['billing_mode' => 1];
+    $locationTypes = CRM_Core_PseudoConstant::get('CRM_Core_DAO_Address', 'location_type_id', [], 'validate');
     $this->_bltID = array_search('Billing', $locationTypes);
     $this->set('bltID', $this->_bltID);
     $this->assign('bltID', $this->_bltID);
-    $this->_fields = array();
+    $this->_fields = [];
 
     // check if the user is registered and we have a contact ID
     $this->_contactID = $this->getContactID();
 
     //Gets the live default payment processor, if not found displays an error
     try {
-      $ppResult = civicrm_api3('PaymentProcessor', 'get', array(
+      $ppResult = civicrm_api3('PaymentProcessor', 'get', [
         'sequential' => 1,
         'return' => "id,name,payment_processor_type_id",
         'is_default' => 1,
         'is_active' => 1,
         'is_test' => 0,
-      ));
+      ]);
     }
     catch (CiviCRM_API3_Exception $e) {
       $error = $e->getMessage();
@@ -629,7 +629,7 @@ class foobar {
       $this->assign('displayName', CRM_Contact_BAO_Contact::displayName($this->_contactID));
 
       //Set column headers for the table
-      $columnHeaders = array('Event', 'Registrant', 'Cost', 'Paid to Date', 'Amount Unpaid', 'Make Payment');
+      $columnHeaders = ['Event', 'Registrant', 'Cost', 'Paid to Date', 'Amount Unpaid', 'Make Payment'];
       $this->assign('columnHeaders', $columnHeaders);
 
       $this->assign('participantInfo', $this->_participantInfo);
@@ -637,10 +637,10 @@ class foobar {
       foreach ($this->_participantInfo as $pid => $pInfo) {
         $totalAmount += $pInfo['total_amount'];
         if ($pInfo['balance']) {
-          $payment_html_attributes = array(
+          $payment_html_attributes = [
             'class' => 'paymentui-payment-amount',
             'onkeyup' => 'calculateTotal();',
-          );
+          ];
           $element = & $this->add('text', "payment[$pid]", NULL, $payment_html_attributes, FALSE);
         }
       }
@@ -649,19 +649,19 @@ class foobar {
 
       CRM_Core_Payment_Form::buildPaymentForm($this, $this->_paymentProcessor, FALSE, FALSE);
 
-      $this->addButtons(array(
-        array(
+      $this->addButtons([
+        [
           'type' => 'submit',
           'name' => ts('Submit'),
           'isDefault' => TRUE,
-        ),
-      ));
+        ],
+      ]);
       $this->addElement('hidden', 'isPaymentuiForm', 1);
 
       // export form elements
       $this->assign('elementNames', $this->getRenderableElementNames());
       parent::buildQuickForm();
-      $this->addFormRule(array('CRM_Paymentui_Form_Paymentui', 'formRule'), $this);
+      $this->addFormRule(['CRM_Paymentui_Form_Paymentui', 'formRule'], $this);
     }
 
     // Include extra CSS styles.
@@ -691,7 +691,7 @@ class foobar {
    * @static
    */
   public static function formRule($fields, $files, $self) {
-    $errors = array();
+    $errors = [];
     //Validate the amount: should not be more than balance and should be numeric
     $total = 0;
     foreach ($fields['payment'] as $pid => $amount) {
@@ -711,7 +711,7 @@ class foobar {
       $errors["payment[{$pid}]"] = ts('Please enter an amount for at least one event.');
     }
     //Validate credit card fields
-    $required = array(
+    $required = [
       'credit_card_type' => 'Credit Card Type',
       'credit_card_number' => 'Credit Card Number',
       'cvv2' => 'CVV',
@@ -722,11 +722,11 @@ class foobar {
       'billing_state_province_id-5' => 'State Province',
       'billing_postal_code-5' => 'Postal Code',
       'billing_country_id-5' => 'Country',
-    );
+    ];
 
     foreach ($required as $name => $fld) {
       if (!$fields[$name]) {
-        $errors[$name] = ts('%1 is a required field.', array(1 => $fld));
+        $errors[$name] = ts('%1 is a required field.', [1 => $fld]);
       }
     }
     CRM_Core_Payment_Form::validateCreditCard($fields, $errors);
@@ -736,14 +736,14 @@ class foobar {
   /**
    * Get the fields/elements defined in this form.
    *
-   * @return array (string)
+   * @return [string]
    */
   private function getRenderableElementNames() {
     // The _elements list includes some items which should not be
     // auto-rendered in the loop -- such as "qfKey" and "buttons".  These
     // items don't have labels.  We'll identify renderable by filtering on
     // the 'label'.
-    $elementNames = array();
+    $elementNames = [];
     foreach ($this->_elements as $element) {
       $label = $element->getLabel();
       if (!empty($label)) {

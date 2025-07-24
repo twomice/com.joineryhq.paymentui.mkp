@@ -67,21 +67,21 @@ class CRM_Paymentui_Upgrader extends CRM_Extension_Upgrader_Base {
     CRM_Core_DAO::executeQuery('UPDATE foo SET is_active = 0 WHERE bar = "whiz"');
     }
 
-    /**
+  /**
    * Create paymentui optionGroup.
    *
    * @return TRUE on success
    * @throws Exception
    */
   public function upgrade_4200() {
-    $result = civicrm_api3('OptionGroup', 'create', array(
+    $result = civicrm_api3('OptionGroup', 'create', [
       'sequential' => 1,
       'name' => "paymentui",
       'title' => "Partial Payments UI Options",
       'is_active' => 1,
       'is_locked' => 1,
       'is_reserved' => 1,
-    ));
+    ]);
     return TRUE;
   }
 
