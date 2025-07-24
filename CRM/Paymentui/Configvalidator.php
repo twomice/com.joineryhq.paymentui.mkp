@@ -4,16 +4,16 @@
  * Validator for selected Contribution Page settings.
  */
 class CRM_Paymentui_Configvalidator {
-  
+
   private $contributionPageId;
   private $failFast = TRUE;
   private $checks = [];
-  
+
   public function __construct($contributionPageId = NULL, $failFast = TRUE) {
     $this->contributionPageId = $contributionPageId;
     $this->failFast = $failFast;
   }
-  
+
   public function isValid() {
     $this->runChecks();
     $statuses = CRM_Utils_Array::collect('status', $this->checks);
@@ -21,23 +21,23 @@ class CRM_Paymentui_Configvalidator {
       return FALSE;
     }
     return TRUE;
-  } 
+  }
 
   public function getChecks() {
     $this->runChecks();
     return $this->checks;
   }
-  
+
   private function runChecks() {
     if (!empty($this->checks)) {
       // Checks have already been run on this contribution page. No need to check again.
       return;
     }
-    
+
     if ($this->failFast) {
       // Parameters for a basic api search of minimally qualifying contribution pages:
       $params = [
-        'id' => $this->contributionPageId, 
+        'id' => $this->contributionPageId,
         'is_active' => 1,
         'is_allow_other_amount' => 1,
         'is_recur' => 0,
@@ -58,7 +58,7 @@ class CRM_Paymentui_Configvalidator {
     else {
       if ($this->contributionPageId) {
         $params = [
-          'id' => $this->contributionPageId, 
+          'id' => $this->contributionPageId,
         ];
         $params['sequential'] = 1;
         $contributionPageGet = civicrm_api3('ContributionPage', 'get', $params);
@@ -75,14 +75,14 @@ class CRM_Paymentui_Configvalidator {
       $this->addCheckStatus('"Execute real-time monetary transactions" must be enabled', $contributionPage['is_monetary']);
       $this->addCheckStatus('"Pay later option" must be disabled', !$contributionPage['is_pay_later']);
     }
-    
+
     // Verify no min amount:
-    $status = !(bool)(float)$contributionPage['min_amount'];
+    $status = !(bool) (float) $contributionPage['min_amount'];
     $this->addCheckStatus('Must not specify "Minimum Amount"', $status);
     if (!$status && $this->failFast) {
       return;
     }
-    
+
     // Verify no max amount:
     $status = !isset($contributionPage['max_amount']);
     $this->addCheckStatus('Must not specify "Maximum Amount"', $status);
@@ -94,7 +94,7 @@ class CRM_Paymentui_Configvalidator {
     $priceSetId = CRM_Price_BAO_PriceSet::getFor('civicrm_contribution_page', $this->contributionPageId);
     $priceSetDetail = CRM_Price_BAO_PriceSet::getCachedPriceSetDetail($priceSetId);
     // Verify priceSet is quick-config.
-    $status = (bool)$priceSetDetail['is_quick_config'];
+    $status = (bool) $priceSetDetail['is_quick_config'];
     $this->addCheckStatus('Must not use a Price Set', $status);
     if (!$status && $this->failFast) {
       return;
@@ -104,7 +104,7 @@ class CRM_Paymentui_Configvalidator {
     // This will also fail if membership is enabled, because then the price set will contain other fields.
     $priceFieldCount = count($priceSetDetail['fields']);
     $singlePriceField = array_pop($priceSetDetail['fields']);
-    
+
     $status = (
       ($priceFieldCount == 1)
       && ($singlePriceField['name'] == 'other_amount')
@@ -125,7 +125,7 @@ class CRM_Paymentui_Configvalidator {
     if (!$status && $this->failFast) {
       return;
     }
-    
+
     // Verify no profiles are enabled.
     $ufJoinCount = civicrm_api3('UFJoin', 'getCount', [
       'entity_table' => "civicrm_contribution_page",
@@ -136,7 +136,7 @@ class CRM_Paymentui_Configvalidator {
     if (!$status && $this->failFast) {
       return;
     }
-    
+
     // Verify no premiums are enabled.
     $premiumCount = civicrm_api3('Premium', 'getCount', [
       'entity_table' => "civicrm_contribution_page",
@@ -148,7 +148,7 @@ class CRM_Paymentui_Configvalidator {
     if (!$status && $this->failFast) {
       return;
     }
-    
+
     // Verify pledge block is disabled.
     // (Note there's no api (3 OR 4) for this; we could use DAO, but might
     // as well use SQL.
@@ -194,13 +194,14 @@ class CRM_Paymentui_Configvalidator {
 
     // If we're still here, we've passed all checks.
     return TRUE;
-      
-  }  
-  
+
+  }
+
   private function addCheckStatus($label, $status) {
     $this->checks[] = [
       'label' => $label,
       'status' => (bool) $status,
     ];
   }
+
 }

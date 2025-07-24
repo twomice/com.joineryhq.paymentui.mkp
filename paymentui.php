@@ -12,24 +12,24 @@ function fixme_zz_paymentui_civicrm_alterPaymentProcessorParams($paymentObj, &$r
   // Don't bother unless we're coming from our own PaymentUI page.
   if (CRM_Utils_Array::value('isPaymentuiForm', $rawParams) == 1) {
     // Get event titles for any participations for which payments are submitted.
-    $paidParticipantIds = array();
+    $paidParticipantIds = [];
     foreach (CRM_Utils_Array::value('payment', $rawParams, array(0)) as $participantId => $amount) {
       if ($amount > 0) {
         $paidParticipantIds[] = $participantId;
       }
     }
-    $apiParams = array(
-      'id' => array('IN' => $paidParticipantIds),
+    $apiParams = [
+      'id' => ['IN' => $paidParticipantIds],
       'return' => "event_id",
-    );
+    ];
     $result = civicrm_api3('Participant', 'get', $apiParams);
     $titles = CRM_Utils_Array::collect('event_title', CRM_Utils_Array::value('values', $result));
     if (!empty($titles)) {
       // Concatenate event titles into the 'desc' parameter sent to the payment processor.
       // TODO: This works for paypal pro; add support for other processors?
-      $desc = ts('Partial payment for event(s): %1', array(
+      $desc = ts('Partial payment for event(s): %1', [
         '1' => implode($titles, '; '),
-      ));
+      ]);
       $cookedParams['desc'] = $desc;
       $cookedParams['description'] = $desc;
     }
@@ -51,9 +51,9 @@ function paymentui_civicrm_buildForm($formName, &$form) {
     $form->assign('beginHookFormElements', $bhfe);
     // Get value from settings and set default.
     $eventSettings = CRM_Paymentui_Settings::getEventSettings($form->_id);
-    $defaults = array(
+    $defaults = [
       'is_paymentui' => CRM_Utils_Array::value('is_paymentui', $eventSettings, 0),
-    );
+    ];
     $form->setDefaults($defaults);
     // Add JavaScript which will position the field correctly within the form.
     CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.paymentui.mkp', 'js/CRM_Event_Form_ManageEvent_Fee.js');
@@ -66,7 +66,7 @@ function paymentui_civicrm_buildForm($formName, &$form) {
       $configValidator = new CRM_Paymentui_Configvalidator($contributionPageId);
       if (!$configValidator->isValid()) {
         $statusMsg = ts('This Contribution Page is selected for the Partial Payments User Interface, but it has some incompatible configurations. ') . ' ' . CRM_Paymentui_Util::getContributionPageConfigHelpMessage();
-        CRM_Core_Session::setStatus($statusMsg, ts('Warning'), 'error');    
+        CRM_Core_Session::setStatus($statusMsg, ts('Warning'), 'error');
       }
     }
   }
@@ -119,12 +119,12 @@ function paymentui_civicrm_enable() {
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_permission
  */
 function paymentui_civicrm_permission(&$permissions) {
-  $permissions += array(
-    'paymentui_add_payments' => array(
-      'label' => ts('Submit Additional Payments', array('domain' => 'com.joineryhq.paymentui.mkp')),
-      'description' => ts('Allows for submitting additional payments against existing partially paid balances.', array('domain' => 'com.joineryhq.paymentui.mkp')),
-    ),
-  );
+  $permissions += [
+    'paymentui_add_payments' => [
+      'label' => ts('Submit Additional Payments', ['domain' => 'com.joineryhq.paymentui.mkp']),
+      'description' => ts('Allows for submitting additional payments against existing partially paid balances.', ['domain' => 'com.joineryhq.paymentui.mkp']),
+    ],
+  ];
 }
 
 /**
@@ -134,15 +134,15 @@ function paymentui_civicrm_permission(&$permissions) {
  */
 function paymentui_civicrm_navigationMenu(&$menu) {
   _paymentui_get_max_navID($menu, $max_navID);
-  _paymentui_civix_insert_navigation_menu($menu, 'Administer/Customize Data and Screens', array(
-    'label' => ts('Partial Payments UI', array('domain' => 'com.joineryhq.paymentui.mkp')),
+  _paymentui_civix_insert_navigation_menu($menu, 'Administer/Customize Data and Screens', [
+    'label' => ts('Partial Payments UI', ['domain' => 'com.joineryhq.paymentui.mkp']),
     'name' => 'Partial Payments UI',
     'url' => 'civicrm/admin/paymentui/settings',
     'permission' => 'administer CiviCRM',
     'operator' => 'AND',
     'separator' => NULL,
     'navID' => ++$max_navID,
-  ));
+  ]);
   _paymentui_civix_navigationMenu($menu);
 }
 

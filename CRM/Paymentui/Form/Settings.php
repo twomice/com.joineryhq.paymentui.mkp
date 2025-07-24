@@ -1,7 +1,7 @@
 <?php
 
-use CRM_Paymentui_ExtensionUtil as E;
 require_once 'CRM/Core/Form.php';
+use CRM_Paymentui_ExtensionUtil as E;
 
 /**
  * Form controller class for extension Settings form.
@@ -28,7 +28,7 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
 
   public function buildQuickForm() {
     $this->showWarnings();
-    
+
     $settings = $this->_settings;
     foreach ($settings as $name => $setting) {
       if (isset($setting['quick_form_type'])) {
@@ -209,7 +209,7 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
       $pageOptions[$id] = $value['title'];
     }
     asort($pageOptions);
-    
+
     return ($baseOptions + $pageOptions);
   }
 
@@ -231,6 +231,7 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
         CRM_Core_Session::setStatus($statusMsg, ts('Warning'), 'error');
       }
     }
-    
+
   }
+
 }

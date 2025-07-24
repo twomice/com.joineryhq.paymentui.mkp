@@ -9,9 +9,9 @@ require_once 'CRM/Core/Form.php';
  */
 class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main {
   private $_participantInfo = [];
-  
+
   function preProcess() {
-    $this->_contactID = $this->getContactID();    
+    $this->_contactID = $this->getContactID();
     $participantInfo = CRM_Paymentui_BAO_Paymentui::getParticipantInfo($this->_contactID);
     $this->_participantInfo = $participantInfo;
     if (!$this->getContributionPageID()) {
@@ -19,7 +19,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     }
     return parent::preProcess();
   }
-  
+
   /**
    * Function to build the form
    *
@@ -33,7 +33,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
       return;
     }
     parent::buildQuickForm();
-    
+
     // Set a special css class on the form if civicrm 'debug' is enable.
     if (\Civi::settings()->get('debug_enabled')) {
       $class = $this->getAttribute('class') . ' paymentui-is-debug';
@@ -52,7 +52,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
       'priceFieldOtherId' => $this->_getPriceFieldOtherID(),
     ];
     CRM_Core_Resources::singleton()->addVars(E::SHORT_NAME, $jsVars);
-    
+
     //Get event names for which logged in user and the related contacts are registered
     if (!empty($this->_participantInfo)) {
       $this->assign('participantInfo', $this->_participantInfo);
@@ -108,7 +108,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
       $this->_id = \Civi::settings()->get('paymentui_contribution_page_id');
     }
     return $this->_id;
-  }  
+  }
   /**
    * Process confirm function and pass browser to the thank you page.
    */
@@ -125,10 +125,10 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
    *
    * @return void
    */
-  public function postProcess() {    
-    
+  public function postProcess() {
+
     $this->_params = $this->controller->exportValues($this->_name);
-    
+
     $totalAmount = $this->getMainContributionAmount();
 
     //Calculate total amount paid and individual amount for each contribution
@@ -148,7 +148,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     $paymentParams['invoiceID'] = md5(uniqid(rand(), TRUE));
     $paymentParams['currency'] = $this->getCurrency();
     $paymentParams['contactID'] = $this->_contactID;
-    
+
     $paymentProcessor = Civi\Payment\System::singleton()->getById($this->_paymentProcessorID);
     $doPaymentResult = $paymentProcessor->doPayment($paymentParams);
     $paymentParams['trxn_id'] = $doPaymentResult['trxn_id'];
@@ -189,8 +189,8 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
         }
       }
 
-      
-/*      
+
+/*
       // Save billing details to new or existing billing address.
       $api_params = array(
         'street_address' => $this->_params['billing_street_address-5'],
@@ -210,12 +210,12 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
       }
       $result = civicrm_api3('Address', 'create', $api_params);
  */
-    }    
-    
+    }
+
     $this->skipToThankYouPage();
     return;
-    
-    
+
+
     $totalAmount = 0;
     $config = CRM_Core_Config::singleton();
 
@@ -299,7 +299,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     $session = CRM_Core_Session::singleton();
     CRM_Utils_System::redirect($url);
   }
-  
+
   /**
    * Send an email receipt for the payment described in given params.
    *
@@ -387,7 +387,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     list($mailSent, $subject, $message, $html) = CRM_Core_BAO_MessageTemplate::sendTemplate($sendTemplateParams);
     return $mailSent;
   }
-  
+
   /**
    * Build list of email from/cc/bcc using the domain email id and the emails
    * configured for the event
@@ -449,14 +449,14 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     }
     return $elementNames;
   }
-  
+
 
   /**
    * Get the ID of the other amount field if the form is configured to offer it.
    *
    * The other amount field is an alternative to the configured radio options,
    * specific to this form.
-   * 
+   *
    * Copied from private method CRM_Contribute_Form_Contribution_Main::getPriceFieldOtherID(),
    * in civicrm 5.81.0
    *
@@ -473,7 +473,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     }
     return NULL;
   }
-  
+
   /**
    * global form rule
    *
@@ -752,6 +752,5 @@ class foobar {
     }
     return $elementNames;
   }
-
 
 }

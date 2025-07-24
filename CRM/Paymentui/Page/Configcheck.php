@@ -17,12 +17,9 @@ class CRM_Paymentui_Page_Configcheck extends CRM_Core_Page {
     }
     $configValidator = new CRM_Paymentui_Configvalidator($contributionPageId, FALSE);
     $checks = $configValidator->getChecks();
-    
+
     $this->assign('checks', $checks);
     $this->assign('settingsUrl', CRM_Utils_System::url('civicrm/admin/paymentui/settings'));
-
-
-
 
     parent::run();
 

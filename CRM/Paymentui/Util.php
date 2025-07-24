@@ -4,6 +4,7 @@
  * Utility methods for paymentui extension
  */
 class CRM_Paymentui_Util {
+
   /**
    * Function to process partial payments
    *
@@ -66,12 +67,10 @@ class CRM_Paymentui_Util {
     }
     return $participantInfo;
   }
-  
 
-  
   public static function getContributionPageConfigHelpMessage() {
-    $url = CRM_Utils_System::url('civicrm/admin/paymentui/configcheck');    
+    $url = CRM_Utils_System::url('civicrm/admin/paymentui/configcheck');
     return ts('See the <a href="%1">Partial Payments UI: Contribution Page Config Checker" page</a> for details on required configuration.', [1 => $url]);
   }
-  
+
 }

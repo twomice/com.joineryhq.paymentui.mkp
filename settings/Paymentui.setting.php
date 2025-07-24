@@ -1,7 +1,8 @@
 <?php
+use CRM_Paymentui_ExtensionUtil as E;
 
-return array(
-  'paymentui_contribution_page_id' => array(
+return [
+  'paymentui_contribution_page_id' => [
     'group_name' => 'Paymentui Settings',
     'group' => 'paymentui',
     'name' => 'paymentui_contribution_page_id',
@@ -9,17 +10,16 @@ return array(
     'add' => '4.6',
     'is_domain' => 1,
     'is_contact' => 0,
-    'default' => array(0),
-    'description' => ts('Select a contribution page to be used as the basis of the payment form.') . ' ' . CRM_Paymentui_Util::getContributionPageConfigHelpMessage(),
-    'title' => ts('Contribution Page'),
+    'default' => [0],
+    'description' => E::ts('Select a contribution page to be used as the basis of the payment form.') . ' ' . CRM_Paymentui_Util::getContributionPageConfigHelpMessage(),
+    'title' => E::ts('Contribution Page'),
     'help_text' => '',
     'html_type' => 'Select',
-    'html_attributes' => array(
-    ),
+    'html_attributes' => [],
     'quick_form_type' => 'Element',
     'X_options_callback' => 'CRM_Paymentui_Form_Settings::getContributionPageOptions',
-  ),
-  'paymentui_exclude_participant_status' => array(
+  ],
+  'paymentui_exclude_participant_status' => [
     'group_name' => 'Paymentui Settings',
     'group' => 'paymentui',
     'name' => 'paymentui_exclude_participant_status',
@@ -27,19 +27,19 @@ return array(
     'add' => '4.6',
     'is_domain' => 1,
     'is_contact' => 0,
-    'default' => array(0),
-    'description' => ts('Participation records in any of the selected statuses will not appear on the payments page.') . ' (' . ts('Use Ctrl+click to select or unselect multiple options.') . ')',
-    'title' => ts('Exclude by status'),
+    'default' => [0],
+    'description' => E::ts('Participation records in any of the selected statuses will not appear on the payments page.') . ' (' . E::ts('Use Ctrl+click to select or unselect multiple options.') . ')',
+    'title' => E::ts('Exclude by status'),
     'help_text' => '',
     'html_type' => 'Select',
-    'html_attributes' => array(
+    'html_attributes' => [
       'multiple' => TRUE,
       'size' => 10,
-    ),
+    ],
     'quick_form_type' => 'Element',
     'X_options_callback' => 'CRM_Paymentui_Form_Settings::getExcludeStatusOptions',
-  ),
-  'paymentui_exclude_participant_role' => array(
+  ],
+  'paymentui_exclude_participant_role' => [
     'group_name' => 'Paymentui Settings',
     'group' => 'paymentui',
     'name' => 'paymentui_exclude_participant_role',
@@ -47,16 +47,16 @@ return array(
     'add' => '4.6',
     'is_domain' => 1,
     'is_contact' => 0,
-    'default' => array(0),
-    'description' => ts('Participation records in any of the selected roless will not appear on the payments page.') . ' (' . ts('Use Ctrl+click to select or unselect multiple options.') . ')',
-    'title' => ts('Exclude by role'),
+    'default' => [0],
+    'description' => E::ts('Participation records in any of the selected roless will not appear on the payments page.') . ' (' . E::ts('Use Ctrl+click to select or unselect multiple options.') . ')',
+    'title' => E::ts('Exclude by role'),
     'help_text' => '',
     'html_type' => 'Select',
-    'html_attributes' => array(
+    'html_attributes' => [
       'multiple' => TRUE,
       'size' => 10,
-    ),
+    ],
     'quick_form_type' => 'Element',
     'X_options_callback' => 'CRM_Paymentui_Form_Settings::getExcludeRoleOptions',
-  ),
-);
+  ],
+];
