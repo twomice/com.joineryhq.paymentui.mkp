@@ -201,18 +201,12 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
       '0' => '- ' . E::ts('Select') . ' -',
     ];
     $result = civicrm_api3('ContributionPage', 'get', array(
-      'is_active' => true,
       'options' => array('limit' => 0),
     ));
     $pageOptions = [];
     $currentValue = \Civi::settings()->get('paymentui_contribution_page_id');
     foreach ($result['values'] as $id => $value) {
-      if (
-        ($id == $currentValue)
-        || CRM_Paymentui_Util::contributionPageConfigIsValid($id)
-      ) {
-        $pageOptions[$id] = $value['title'];
-      }
+      $pageOptions[$id] = $value['title'];
     }
     asort($pageOptions);
     
@@ -230,9 +224,12 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
 
   private function showWarnings() {
     $selectedContributionPageId = \Civi::settings()->get('paymentui_contribution_page_id');
-    if (!CRM_Paymentui_Util::contributionPageConfigIsValid($selectedContributionPageId)) {
-      $statusMsg = ts('The selected Contribution Page has a problem:') . ' ' . CRM_Paymentui_Util::getContributionPageConfigErrorMessage();
-      CRM_Core_Session::setStatus($statusMsg, ts('Warning'), 'error');
+    if ($selectedContributionPageId) {
+      $configValidator = new CRM_Paymentui_Configvalidator($selectedContributionPageId);
+      if (!$configValidator->isValid()) {
+        $statusMsg = ts('The selected Contribution Page has a problem:') . ' ' . CRM_Paymentui_Util::getContributionPageConfigHelpMessage();
+        CRM_Core_Session::setStatus($statusMsg, ts('Warning'), 'error');
+      }
     }
     
   }

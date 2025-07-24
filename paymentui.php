@@ -62,12 +62,12 @@ function paymentui_civicrm_buildForm($formName, &$form) {
     $contributionPageId = $form->get('id');
     $paymentUiContributionPageId = \Civi::settings()->get('paymentui_contribution_page_id');
 
-    if (
-      ($contributionPageId == $paymentUiContributionPageId)
-      && !CRM_Paymentui_Util::contributionPageConfigIsValid($contributionPageId)
-    ) {
-      $statusMsg = ts('This Contribution Page is selected for the Partial Payments User Interface, but it has some incompatible configurations. ') . ' ' . CRM_Paymentui_Util::getContributionPageConfigErrorMessage();
-      CRM_Core_Session::setStatus($statusMsg, ts('Warning'), 'error');    
+    if ($contributionPageId == $paymentUiContributionPageId) {
+      $configValidator = new CRM_Paymentui_Configvalidator($contributionPageId);
+      if (!$configValidator->isValid()) {
+        $statusMsg = ts('This Contribution Page is selected for the Partial Payments User Interface, but it has some incompatible configurations. ') . ' ' . CRM_Paymentui_Util::getContributionPageConfigHelpMessage();
+        CRM_Core_Session::setStatus($statusMsg, ts('Warning'), 'error');    
+      }
     }
   }
 }

@@ -14,4 +14,10 @@
     <title>Partial Payments User Interface: Settings</title>
     <access_arguments>administer CiviCRM</access_arguments>
   </item>
+  <item>
+    <path>civicrm/admin/paymentui/configcheck</path>
+    <page_callback>CRM_Paymentui_Page_Configcheck</page_callback>
+    <title>Partial Payments UI: Contribution Page Config Checker</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
 </menu>
