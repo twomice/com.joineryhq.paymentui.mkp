@@ -27,8 +27,17 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
    * @access public
    */
   public function buildQuickForm() {
+    // Ensure a contribution page has been selected in the extension settings.
     if (!$this->getContributionPageID()) {
       CRM_Core_Session::setStatus('Site administrator attention required: No contribution page has been configured for the Partial Payments User Interface.', ts('Configuration incomplete'), 'error');
+      $this->assign('config_incomplete', TRUE);
+      return;
+    }
+
+    // Ensure this contribution page has valid configurations.
+    $configValidator = new CRM_Paymentui_Configvalidator($this->getContributionPageID(), FALSE);
+    if (!$configValidator->isValid()) {
+      CRM_Core_Session::setStatus('Site administrator attention required: The selected contribution page has configuration problems. See Partial Payments UI settings.', ts('Configuration incompatible'), 'error');
       $this->assign('config_incomplete', TRUE);
       return;
     }
