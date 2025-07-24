@@ -171,4 +171,3 @@ function _paymentui_get_max_navID(&$menu, &$max_navID = NULL) {
 // function paymentui_civicrm_postInstall() {
 //   _paymentui_civix_civicrm_postInstall();
 // }
-
