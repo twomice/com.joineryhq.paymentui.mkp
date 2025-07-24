@@ -58,6 +58,14 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
             );
             break;
 
+          case 'EntityRef':
+            $this->addEntityRef(
+              $setting['name'],
+              $setting['title'],
+              $this->getEntityRefProps($setting)
+            );
+            break;
+
           default:
             $add = 'add' . $setting['quick_form_type'];
             if ($add == 'addElement') {
@@ -213,12 +221,32 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
     return ($baseOptions + $pageOptions);
   }
 
+  public static function getContributionPageEntityRefProps() {
+    return [
+      'entity' => 'contributionPage',
+      'placeholder' => '- ' . E::ts('Select') . ' -',
+      'select' => ['minimumInputLength' => 0],
+      'api' => [
+        'x-is-paymentui' => TRUE,
+      ],
+    ];
+  }
+
   public function getSettingOptions($setting) {
     if (!empty($setting['X_options_callback']) && is_callable($setting['X_options_callback'])) {
       return call_user_func($setting['X_options_callback']);
     }
     else {
       return ($setting['X_options'] ?? []);
+    }
+  }
+
+  public function getEntityRefProps($setting) {
+    if (!empty($setting['X_entityref_props_callback']) && is_callable($setting['X_entityref_props_callback'])) {
+      return call_user_func($setting['X_entityref_props_callback']);
+    }
+    else {
+      return [];
     }
   }
 
@@ -231,7 +259,6 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
         CRM_Core_Session::setStatus($statusMsg, ts('Warning'), 'error');
       }
     }
-
   }
 
 }

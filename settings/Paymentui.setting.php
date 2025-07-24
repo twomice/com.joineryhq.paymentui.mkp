@@ -14,10 +14,14 @@ return [
     'description' => E::ts('Select a contribution page to be used as the basis of the payment form.') . ' ' . CRM_Paymentui_Util::getContributionPageConfigHelpMessage(),
     'title' => E::ts('Contribution Page'),
     'help_text' => '',
-    'html_type' => 'Select',
-    'html_attributes' => [],
+    'html_type' => 'EntityRef',
+    'html_attributes' => [
+      'class' => 'crm-select2',
+      'style' => "width:auto;",
+    ],
     'quick_form_type' => 'Element',
     'X_options_callback' => 'CRM_Paymentui_Form_Settings::getContributionPageOptions',
+    'X_entityref_props_callback' => 'CRM_Paymentui_Form_Settings::getContributionPageEntityRefProps',
   ],
   'paymentui_exclude_participant_status' => [
     'group_name' => 'Paymentui Settings',

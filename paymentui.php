@@ -93,6 +93,9 @@ function paymentui_civicrm_postProcess($formName, &$form) {
  */
 function paymentui_civicrm_config(&$config) {
   _paymentui_civix_civicrm_config($config);
+  // Bind our event listeners.
+  Civi::dispatcher()->addListener('civi.api.prepare', ['CRM_Paymentui_APIWrapper', 'PREPARE'], -100);
+  Civi::dispatcher()->addListener('civi.api.respond', ['CRM_Paymentui_APIWrapper', 'RESPOND'], -100);
 }
 
 /**
