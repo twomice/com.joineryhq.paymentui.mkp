@@ -27,6 +27,8 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
   }
 
   public function buildQuickForm() {
+    $this->showWarnings();
+    
     $settings = $this->_settings;
     foreach ($settings as $name => $setting) {
       if (isset($setting['quick_form_type'])) {
@@ -203,8 +205,14 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
       'options' => array('limit' => 0),
     ));
     $pageOptions = [];
+    $currentValue = \Civi::settings()->get('paymentui_contribution_page_id');
     foreach ($result['values'] as $id => $value) {
-      $pageOptions[$id] = $value['title'];
+      if (
+        ($id == $currentValue)
+        || CRM_Paymentui_Util::contributionPageConfigIsValid($id)
+      ) {
+        $pageOptions[$id] = $value['title'];
+      }
     }
     asort($pageOptions);
     
@@ -220,4 +228,12 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
     }
   }
 
+  private function showWarnings() {
+    $selectedContributionPageId = \Civi::settings()->get('paymentui_contribution_page_id');
+    if (!CRM_Paymentui_Util::contributionPageConfigIsValid($selectedContributionPageId)) {
+      $statusMsg = ts('The selected Contribution Page has a problem:') . ' ' . CRM_Paymentui_Util::getContributionPageConfigErrorMessage();
+      CRM_Core_Session::setStatus($statusMsg, ts('Warning'), 'error');
+    }
+    
+  }
 }

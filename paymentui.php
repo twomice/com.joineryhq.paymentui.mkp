@@ -58,6 +58,18 @@ function paymentui_civicrm_buildForm($formName, &$form) {
     // Add JavaScript which will position the field correctly within the form.
     CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.paymentui.mkp', 'js/CRM_Event_Form_ManageEvent_Fee.js');
   }
+  elseif (is_a($form, 'CRM_Contribute_Form_ContributionPage')) {
+    $contributionPageId = $form->get('id');
+    $paymentUiContributionPageId = \Civi::settings()->get('paymentui_contribution_page_id');
+
+    if (
+      ($contributionPageId == $paymentUiContributionPageId)
+      && !CRM_Paymentui_Util::contributionPageConfigIsValid($contributionPageId)
+    ) {
+      $statusMsg = ts('This Contribution Page is selected for the Partial Payments User Interface, but it has some incompatible configurations. ') . ' ' . CRM_Paymentui_Util::getContributionPageConfigErrorMessage();
+      CRM_Core_Session::setStatus($statusMsg, ts('Warning'), 'error');    
+    }
+  }
 }
 
 /**
