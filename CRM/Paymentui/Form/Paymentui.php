@@ -10,7 +10,7 @@ require_once 'CRM/Core/Form.php';
 class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main {
   private $_participantInfo = [];
 
-  function preProcess() {
+  public function preProcess() {
     $this->_contactID = $this->getContactID();
     $participantInfo = CRM_Paymentui_BAO_Paymentui::getParticipantInfo($this->_contactID);
     $this->_participantInfo = $participantInfo;
@@ -109,6 +109,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     }
     return $this->_id;
   }
+
   /**
    * Process confirm function and pass browser to the thank you page.
    */
@@ -116,7 +117,6 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     // Redirect to our own page (we don't use thank-you or confirmation.
     CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/paymentui/add/payment', "reset=1", TRUE, NULL, FALSE));
   }
-
 
   /**
    * Function to process the form
@@ -426,7 +426,6 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     return $elementNames;
   }
 
-
   /**
    * Get the ID of the other amount field if the form is configured to offer it.
    *
@@ -487,5 +486,5 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
 
     return $errors;
   }
-}
 
+}
