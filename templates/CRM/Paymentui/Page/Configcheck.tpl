@@ -70,6 +70,10 @@
   </thead>
   <tbody>
     <tr>
+      <td>Financial Type</td>
+      <td>Partial Payments UI does not create contributions, so no contribution Financial Type is relevant. (Each partial payment will inherit the financial type of the relevant existing contribution.)</td>
+    </tr>
+    <tr>
       <td>Use a confirmation page?</td>
       <td>Partial Payments UI will skip the confirmation page.</td>
     </tr>
