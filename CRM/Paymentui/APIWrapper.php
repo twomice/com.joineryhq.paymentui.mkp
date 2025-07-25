@@ -38,9 +38,9 @@ class CRM_Paymentui_APIWrapper {
   }
 
   /**
-   * API wrapper for 'prepare' event on 3.contributionpage.getlist
+   * API wrapper for 'respond' event on 3.contributionpage.getlist
    *
-   * @param Civi\API\Event\PrepareEvent $event
+   * @param Civi\API\Event\RespondEvent $event
    */
   private static function RESPOND_3_contributionpage_getlist($event) {
     // Alter the resonse so that Description just shows the Contribution Page ID.
