@@ -43,6 +43,10 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     }
     parent::buildQuickForm();
 
+    // Remove email field from this form.
+    $emailFieldName = "email-{$this->_bltID}";
+    $this->removeElement($emailFieldName);
+
     // Set a special css class on the form if civicrm 'debug' is enable.
     if (\Civi::settings()->get('debug_enabled')) {
       $class = $this->getAttribute('class') . ' paymentui-is-debug';
@@ -365,7 +369,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     ) {
       $sendTemplateParams['from'] = ($fromEmails['from'] ?? NULL);
       $sendTemplateParams['toName'] = ($contact['display_name'] ?? NULL);
-      $sendTemplateParams['toEmail'] = ($contact['email'] ?? NULL);
+      $sendTemplateParams['toEmail'] = $contactEmail;
       $sendTemplateParams['cc'] = ($fromEmails['cc'] ?? NULL);
       $sendTemplateParams['bcc'] = ($fromEmails['bcc'] ?? NULL);
     }
