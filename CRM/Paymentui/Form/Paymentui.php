@@ -12,10 +12,12 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
 
   public function preProcess() {
     $this->_contactID = $this->getContactID();
-    $participantInfo = CRM_Paymentui_BAO_Paymentui::getParticipantInfo($this->_contactID);
-    $this->_participantInfo = $participantInfo;
-    if (!$this->getContributionPageID()) {
-      return;
+    if ($this->_contactID) {
+      $participantInfo = CRM_Paymentui_BAO_Paymentui::getParticipantInfo($this->_contactID);
+      $this->_participantInfo = $participantInfo;
+      if (!$this->getContributionPageID()) {
+        return;
+      }
     }
     return parent::preProcess();
   }
@@ -27,10 +29,22 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
    * @access public
    */
   public function buildQuickForm() {
+    if (!CRM_Core_Permission::check('paymentui_add_payments')) {
+      $message = \Civi::settings()->get('paymentui_permission_denied_message');
+      if (!empty($message)) {
+        CRM_Core_Session::setStatus($message);
+        $this->assign('hideFormContents', TRUE);
+        return;
+      }
+      else {
+        CRM_Utils_System::permissionDenied();
+      }
+    }
+
     // Ensure a contribution page has been selected in the extension settings.
     if (!$this->getContributionPageID()) {
       CRM_Core_Session::setStatus('Site administrator attention required: No contribution page has been configured for the Partial Payments User Interface.', ts('Configuration incomplete'), 'error');
-      $this->assign('config_incomplete', TRUE);
+      $this->assign('hideFormContents', TRUE);
       return;
     }
 
@@ -38,7 +52,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     $configValidator = new CRM_Paymentui_Configvalidator($this->getContributionPageID(), FALSE);
     if (!$configValidator->isValid()) {
       CRM_Core_Session::setStatus('Site administrator attention required: The selected contribution page has configuration problems. See Partial Payments UI settings.', ts('Configuration incompatible'), 'error');
-      $this->assign('config_incomplete', TRUE);
+      $this->assign('hideFormContents', TRUE);
       return;
     }
     parent::buildQuickForm();

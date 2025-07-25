@@ -1,4 +1,4 @@
-{if !$config_incomplete}
+{if !$hideFormContents}
   {if $participantInfo}
     {* HEADER *}
     <div class="form-item" id="paymentui-container">

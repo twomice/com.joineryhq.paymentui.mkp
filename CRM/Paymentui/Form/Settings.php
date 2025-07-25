@@ -207,23 +207,6 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
     return $options;
   }
 
-  public static function getContributionPageOptions() {
-    $baseOptions = [
-      '0' => '- ' . E::ts('Select') . ' -',
-    ];
-    $result = civicrm_api3('ContributionPage', 'get', [
-      'options' => ['limit' => 0],
-    ]);
-    $pageOptions = [];
-    $currentValue = \Civi::settings()->get('paymentui_contribution_page_id');
-    foreach ($result['values'] as $id => $value) {
-      $pageOptions[$id] = $value['title'];
-    }
-    asort($pageOptions);
-
-    return ($baseOptions + $pageOptions);
-  }
-
   public static function getContributionPageEntityRefProps() {
     return [
       'entity' => 'contributionPage',
