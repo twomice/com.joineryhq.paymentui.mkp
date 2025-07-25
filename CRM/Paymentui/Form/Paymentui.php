@@ -9,8 +9,40 @@ require_once 'CRM/Core/Form.php';
  */
 class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main {
   private $_participantInfo = [];
+  private $_contributionPageStatus;
+
+  private function _contributionPageIsValid() {
+    if (!isset($this->_contributionPageStatus)) {
+      // Start by assuming it's valid:
+      $this->_contributionPageStatus = TRUE;
+
+      // Now invalidate per inspection:
+
+      // Ensure a contribution page has been selected in the extension settings.
+      if (!$this->getContributionPageID()) {
+        CRM_Core_Session::setStatus('Site administrator attention required: No contribution page has been configured for the Partial Payments User Interface.', ts('Configuration incomplete'), 'error');
+        $this->_contributionPageStatus = FALSE;
+      }
+      else {
+        // Ensure contribution page config is valid.
+        $configValidator = new CRM_Paymentui_Configvalidator($this->getContributionPageID(), FALSE);
+        if (!$configValidator->isValid()) {
+          $this->_contributionPageStatus = FALSE;
+          CRM_Core_Session::setStatus('Site administrator attention required: The selected contribution page has configuration problems. See Partial Payments UI settings.', ts('Configuration incompatible'), 'error');
+        }
+      }
+    }
+    if (!$this->_contributionPageStatus) {
+      $this->assign('hideFormContents', TRUE);
+    }
+
+    return $this->_contributionPageStatus;
+  }
 
   public function preProcess() {
+    if (!$this->_contributionPageIsValid()) {
+      return;
+    }
     $this->_contactID = $this->getContactID();
     if ($this->_contactID) {
       $participantInfo = CRM_Paymentui_BAO_Paymentui::getParticipantInfo($this->_contactID);
@@ -41,18 +73,8 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
       }
     }
 
-    // Ensure a contribution page has been selected in the extension settings.
-    if (!$this->getContributionPageID()) {
-      CRM_Core_Session::setStatus('Site administrator attention required: No contribution page has been configured for the Partial Payments User Interface.', ts('Configuration incomplete'), 'error');
-      $this->assign('hideFormContents', TRUE);
-      return;
-    }
-
     // Ensure this contribution page has valid configurations.
-    $configValidator = new CRM_Paymentui_Configvalidator($this->getContributionPageID(), FALSE);
-    if (!$configValidator->isValid()) {
-      CRM_Core_Session::setStatus('Site administrator attention required: The selected contribution page has configuration problems. See Partial Payments UI settings.', ts('Configuration incompatible'), 'error');
-      $this->assign('hideFormContents', TRUE);
+    if (!$this->_contributionPageIsValid()) {
       return;
     }
     parent::buildQuickForm();
@@ -132,7 +154,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
    */
   public function getContributionPageID(): int {
     if (!$this->_id) {
-      $this->_id = \Civi::settings()->get('paymentui_contribution_page_id');
+      $this->_id = (int) \Civi::settings()->get('paymentui_contribution_page_id');
     }
     return (int) $this->_id;
   }
