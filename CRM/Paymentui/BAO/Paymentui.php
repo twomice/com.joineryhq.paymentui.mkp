@@ -41,7 +41,7 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
     }
 
     //Get participant info for the primary and related contacts
-    $sql = "
+    $query = "
       SELECT
         p.id, p.contact_id, p.status_id, e.title, c.display_name,
         pp.contribution_id, e.id as event_id,
@@ -62,11 +62,12 @@ class CRM_Paymentui_BAO_Paymentui extends CRM_Event_DAO_Participant {
       // (We use concat to wrap role_id in VALUE_SEPARATOR so that LIKE '%...%'
       // works correctly, regardless of whether $param appears first, last, alone,
       // or in the middle of a delimited string.)
-      $sql .= "AND concat('" . CRM_core_dao::VALUE_SEPARATOR . "', p.role_id, '" . CRM_core_dao::VALUE_SEPARATOR . "') NOT LIKE '%" . CRM_core_dao::VALUE_SEPARATOR . $param . CRM_core_dao::VALUE_SEPARATOR . "%'";
+      $query .= "AND concat('" . CRM_core_dao::VALUE_SEPARATOR . "', p.role_id, '" . CRM_core_dao::VALUE_SEPARATOR . "') NOT LIKE '%" . CRM_core_dao::VALUE_SEPARATOR . $param . CRM_core_dao::VALUE_SEPARATOR . "%'";
       $query_params[$i] = [$param, 'Int'];
       $i++;
     }
-    $dao = CRM_Core_DAO::executeQuery($sql, $query_params);
+    $sql = CRM_Core_DAO::composeQuery($query, $query_params);
+    $dao = CRM_Core_DAO::executeQuery($query, $query_params);
 
     $participantInfo = [];
     if ($dao->N) {
