@@ -211,6 +211,9 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
       'select' => ['minimumInputLength' => 0],
       'api' => [
         'x-is-paymentui' => TRUE,
+        'params' => [
+          'is_active' => ['IN' => [1, 0]],
+        ],
       ],
     ];
   }
