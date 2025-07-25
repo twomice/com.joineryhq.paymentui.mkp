@@ -401,15 +401,16 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     // and the do-not-email option is not checked for that contact
     $contact = civicrm_api3('contact', 'getSingle', ['id' => $contactId]);
     if (
-      $contactEmail = ($contact['email'] ?? NULL) && !($contact['do_not_email'] ?? NULL)
+      ($contact['email'] ?? NULL) && !($contact['do_not_email'] ?? NULL)
     ) {
       $sendTemplateParams['from'] = ($fromEmails['from'] ?? NULL);
       $sendTemplateParams['toName'] = ($contact['display_name'] ?? NULL);
-      $sendTemplateParams['toEmail'] = $contactEmail;
+      $sendTemplateParams['toEmail'] = $contact['email'];
       $sendTemplateParams['cc'] = ($fromEmails['cc'] ?? NULL);
       $sendTemplateParams['bcc'] = ($fromEmails['bcc'] ?? NULL);
     }
     list($mailSent, $subject, $message, $html) = CRM_Core_BAO_MessageTemplate::sendTemplate($sendTemplateParams);
+    \Civi::log()->info(__CLASS__ . ': Attemped to send mail receipt; status: ' . (int) $mailSent . '; params: ', $sendTemplateParams);
     return $mailSent;
   }
 
