@@ -1,6 +1,11 @@
 /* Styles for ConfigCheck page */
 
-.crm-i.fa-check {
+/**
+ * Some sites (e.g. mkpconnect) are hiding these icons for their own reasons
+ * in civicrm-custom css, but we insist on displaying them per normal civicrm
+ * styles.
+ */
+.crm-i.fa-check, .crm-i.fa-exclamation-triangle {
   display: var(--fa-display, inline-block);
 }
 
