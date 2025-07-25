@@ -1,0 +1,6 @@
+/* Styles for ConfigCheck page */
+
+.crm-i.fa-check {
+  display: var(--fa-display, inline-block);
+}
+

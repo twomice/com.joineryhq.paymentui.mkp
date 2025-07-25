@@ -100,10 +100,7 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
       ],
     ]);
 
-    $style_path = CRM_Core_Resources::singleton()->getPath(self::$extensionName, 'css/extension.css');
-    if ($style_path) {
-      CRM_Core_Resources::singleton()->addStyleFile(self::$extensionName, 'css/extension.css');
-    }
+    CRM_Core_Resources::singleton()->addStyleFile(E::LONG_NAME, 'css/extension.css');
 
     // export form elements
     $this->assign('elementNames', $this->getRenderableElementNames());

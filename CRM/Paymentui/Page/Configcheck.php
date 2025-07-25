@@ -21,17 +21,13 @@ class CRM_Paymentui_Page_Configcheck extends CRM_Core_Page {
     $this->assign('checks', $checks);
     $this->assign('settingsUrl', CRM_Utils_System::url('civicrm/admin/paymentui/settings'));
 
+    CRM_Core_Resources::singleton()->addStyleFile(E::LONG_NAME, 'css/CRM_Paymentui_Page_Configcheck.css');
+
     parent::run();
 
     if (empty($contributionPageId)) {
       return;
     }
-
-    // Example: Set the page-title dynamically; alternatively, declare a static title in xml/Menu/*.xml
-    CRM_Utils_System::setTitle(E::ts('Configcheck'));
-
-    // Example: Assign a variable for use in a template
-    $this->assign('currentTime', date('Y-m-d H:i:s'));
 
   }
 

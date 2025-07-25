@@ -1,10 +1,4 @@
 {* HEADER *}
-{* Display top submit button only if there are more than three elements on the page *}
-{if ($elementNames|@count) gt 3}
-  <div class="crm-submit-buttons">
-  {include file="CRM/common/formButtons.tpl" location="top"}
-  </div>
-{/if}
 
 {* FIELDS (AUTOMATIC LAYOUT) *}
 
