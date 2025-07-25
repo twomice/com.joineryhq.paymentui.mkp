@@ -7,7 +7,7 @@ CRM.$(function($){
 
   // Lock all inputs int the priceset.
   CRM.$('div#priceset-div input').attr('readonly', 'readonly');
-  
+
   // Add click handlers for "show all" and "show payable" buttons.
   $('a#paymentui-button-show-payable').click(paymentui_add_payment.show_payable);
   $('a#paymentui-button-show-all').click(paymentui_add_payment.show_all);
@@ -17,6 +17,15 @@ CRM.$(function($){
 
   // Start by showing all events.
   paymentui_add_payment.show_all();
+
+  // Modify label of any "Configure Contribution Page" button
+  var buttonTitleText = ts('Configure Contribution Page');
+  var buttonSpanSelector = 'a[title="' +  buttonTitleText + '"] span';
+  var elButtonIcon = $(buttonSpanSelector + ' i');
+  $(buttonSpanSelector).empty();
+  $(buttonSpanSelector).append(elButtonIcon);
+  $(buttonSpanSelector).append(' ' + buttonTitleText);
+
 });
 
 var paymentui_add_payment = {
@@ -62,12 +71,12 @@ var paymentui_add_payment = {
       CRM.$('p#empty-events-list-notice').show();
     }
   },
-  
+
   'paymentuiAmountChange': function paymentuiAmountChange() {
     var total = 0.00;
-  
+
     var thisVal = CRM.$(this).val();
-  
+
     if (!CRM.$.isNumeric(thisVal)) {
       CRM.alert("Please enter a numeric value.", 'Not a number', 'error');
       CRM.$(this).focus();
@@ -76,7 +85,6 @@ var paymentui_add_payment = {
     else {
       CRM.$.each(CRM.$( "input.paymentui-payment-amount" ), function() {
         var amt = CRM.$(this).val();
-        console.log('amt', amt)
         if ( CRM.$.isNumeric(amt) ) {
           total = parseFloat(total)+parseFloat(amt);
         }
@@ -86,5 +94,5 @@ var paymentui_add_payment = {
       CRM.$('#total').html(total);
     }
     CRM.$('#price_' + CRM.vars.paymentui.priceFieldOtherId).val(total).keyup();
-  }  
+  }
 };
