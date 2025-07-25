@@ -134,7 +134,7 @@ class CRM_Paymentui_Form_Paymentui extends CRM_Contribute_Form_Contribution_Main
     if (!$this->_id) {
       $this->_id = \Civi::settings()->get('paymentui_contribution_page_id');
     }
-    return $this->_id;
+    return (int) $this->_id;
   }
 
   /**

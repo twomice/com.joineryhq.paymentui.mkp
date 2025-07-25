@@ -10,7 +10,7 @@ return [
     'add' => '4.6',
     'is_domain' => 1,
     'is_contact' => 0,
-    'default' => [0],
+    'default' => '',
     'description' => E::ts('Select a contribution page to be used as the basis of the payment form.') . ' ' . CRM_Paymentui_Util::getContributionPageConfigHelpMessage(),
     'title' => E::ts('Contribution Page'),
     'help_text' => '',
