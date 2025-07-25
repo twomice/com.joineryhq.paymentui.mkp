@@ -19,12 +19,19 @@ CRM.$(function($){
   paymentui_add_payment.show_all();
 
   // Modify label of any "Configure Contribution Page" button
-  var buttonTitleText = ts('Configure Contribution Page');
-  var buttonSpanSelector = 'a[title="' +  buttonTitleText + '"] span';
-  var elButtonIcon = $(buttonSpanSelector + ' i');
-  $(buttonSpanSelector).empty();
-  $(buttonSpanSelector).append(elButtonIcon);
-  $(buttonSpanSelector).append(' ' + buttonTitleText);
+  var configureButtonTitleText = ts('Configure Contribution Page');
+  var confibureButtonSpanSelector = 'a[title="' +  configureButtonTitleText + '"] span';
+  var elConfigureButtonIcon = $(confibureButtonSpanSelector + ' i');
+  $(confibureButtonSpanSelector).empty();
+  $(confibureButtonSpanSelector).append(elConfigureButtonIcon);
+  $(confibureButtonSpanSelector).append(' ' + configureButtonTitleText);
+
+  // Modify label of "Submit" button (e.g. if Confirmation Page is enabled,
+  // this button may say "Review your contribution". But we don't support a
+  // Confirmation Page, so we want it just to say "Contribute".
+  //
+  var submitButtonSelector = 'button.crm-button_qf_Paymentui_upload';
+  $(submitButtonSelector).html(ts('Contribute'));
 
 });
 
