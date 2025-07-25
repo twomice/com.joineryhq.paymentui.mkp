@@ -27,7 +27,10 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
   }
 
   public function buildQuickForm() {
-    $this->showWarnings();
+    if (!$this->_flagSubmitted) {
+      // Only on page load (not on submit), validate the selected Contribution Page.
+      $this->showWarnings();
+    }
 
     $settings = $this->_settings;
     foreach ($settings as $name => $setting) {
@@ -255,7 +258,11 @@ class CRM_Paymentui_Form_Settings extends CRM_Core_Form {
     if ($selectedContributionPageId) {
       $configValidator = new CRM_Paymentui_Configvalidator($selectedContributionPageId);
       if (!$configValidator->isValid()) {
-        $statusMsg = ts('The selected Contribution Page has a problem:') . ' ' . CRM_Paymentui_Util::getContributionPageConfigHelpMessage();
+        $contributionPageTitle = civicrm_api3('ContributionPage', 'getValue', [
+          'id' => $selectedContributionPageId,
+          'return' => 'title',
+        ]);
+        $statusMsg = ts('The selected Contribution Page <em>%1</em> has a problem:', [1 => $contributionPageTitle]) . ' ' . CRM_Paymentui_Util::getContributionPageConfigHelpMessage();
         CRM_Core_Session::setStatus($statusMsg, ts('Warning'), 'error');
       }
     }
