@@ -58,8 +58,9 @@ class CRM_Paymentui_Util {
         }
         catch (CiviCRM_API3_Exception $e) {
           $error = $e->getMessage();
-          CRM_Core_Error::debug_var("Trxn Record", $trxnRecord);
-          CRM_Core_Error::debug_var("API Exception error", $error);
+          CRM_Core_Error::debug_var("paymentui.mkp: Could not create payment: Trxn Record", $trxnRecord);
+          CRM_Core_Error::debug_var("paymentui.mkp: Could not create payment: API Exception error", $error);
+          CRM_Core_Error::debug_var("paymentui.mkp: Could not create payment: API Exception details", $e);
         }
         $participantInfo[$pId]['success'] = 1;
         $participantInfo[$pId]['payment'] = $trxnRecord['values'][$trxnRecord['id']];
